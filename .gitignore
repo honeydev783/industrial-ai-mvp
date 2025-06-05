@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Node
+node_modules/
+build/
+
+# Docker
+*.log
+*.pid
+*.sock
+
+# System
+.DS_Store 
