@@ -1,4 +1,10 @@
 fastapi
 uvicorn
+python-multipart
 boto3
+python-dotenv
+pydantic
+requests
 pinecone-client
+PyPDF2
+python-docx
