@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-
+import './App.css';
+import Home from "./pages/Home";
 function App() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    fetch("/api/hello")
+    fetch("http://localhost:8000/api/hello")
       .then(res => res.json())
       .then(data => setMsg(data.message));
   }, []);
 
-  return <div><h1>{msg}</h1></div>;
+  return ( 
+  <div className="App">
+    <Home />
+    <h1>{msg}</h1>
+  </div>
+  );
 }
 
 export default App;

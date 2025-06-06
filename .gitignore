@@ -4,7 +4,7 @@ __pycache__/
 .env
 
 # Node
-node_modules/
+node_modules/                              
 build/
 
 # Docker
