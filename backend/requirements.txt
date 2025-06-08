@@ -5,6 +5,7 @@ boto3
 python-dotenv
 pydantic
 requests
-pinecone-client
+pinecone
 PyPDF2
 python-docx
+pinecone-client[grpc]

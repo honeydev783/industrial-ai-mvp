@@ -1,9 +1,10 @@
 import os
-import pinecone
+from pinecone.grpc import PineconeGRPC as Pinecone
 import boto3
 
-pinecone.init(api_key=os.getenv("PINECONE_API_KEY"), environment=os.getenv("PINECONE_ENVIRONMENT"))
-index = pinecone.Index(os.getenv("PINECONE_INDEX_NAME"))
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index = pc.Index(os.getenv("PINECONE_INDEX_HOST"))
+# index = pinecone.Index(os.getenv("PINECONE_INDEX_NAME"))
 bedrock = boto3.client("bedrock-runtime", region_name=os.getenv("BEDROCK_REGION"))
 
 
@@ -21,7 +22,7 @@ def retrieve_and_answer(query: str, user_id: str):
 
     answer_resp = bedrock.invoke_model(
         body=f'{{"prompt": {repr(full_prompt)}, "maxTokens": 256 }}',
-        modelId="anthropic.claude-v2",
+        modelId="anthropic.claude-4-sonnet-20250522-v1:0",
         accept="application/json", contentType="application/json"
     )
     answer = eval(answer_resp['body'].read().decode())["completion"]

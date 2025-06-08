@@ -9,10 +9,10 @@ import os
 import tempfile
 import mimetypes
 from dotenv import load_dotenv
-from backend.utils.auth import get_current_user
-from backend.utils.s3 import upload_to_s3
-from backend.utils.embedding import embed_and_store
-from backend.utils.qa import retrieve_and_answer
+# from utils.auth import get_current_user
+from utils.s3 import upload_to_s3
+from utils.embedding import embed_and_store
+from utils.qa import retrieve_and_answer
 
 # Load environment variables
 load_dotenv()
