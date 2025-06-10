@@ -1,12 +1,11 @@
+# app/utils.py
 from PyPDF2 import PdfReader
 import docx
 import textract
 import csv
 import os
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-def extract_text_from_file(file_path):
+
+def extract_text_chunks(file_path):
     ext = os.path.splitext(file_path)[1].lower()
     print("Extracting text from file:", file_path, "with extension:", ext)
     text_chunks = []
@@ -38,3 +37,12 @@ def extract_text_from_file(file_path):
     for i in range(0, len(words), 512):
         text_chunks.append(" ".join(words[i:i+512]))
     return text_chunks
+
+# def extract_text_chunks(file) -> list:
+#     # Dummy example: replace with real PDF, DOCX, CSV parser
+#     # Return list of (chunk_text, section)
+#     return [
+#         ("Chunk 1 text of the document", "Introduction"),
+#         ("Chunk 2 text of the document", "Section 1"),
+#         ("Chunk 3 text of the document", "Section 2"),
+#     ]

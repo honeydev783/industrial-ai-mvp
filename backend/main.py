@@ -1,22 +1,18 @@
-from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException
+# app/main.py
+
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
 from typing import List
-import boto3
-import uuid
-import os
+from dotenv import load_dotenv
+from models import QueryRequest, QueryResponse
+from vector_store import query_pinecone, upsert_document
+from llm_client import ask_claude
+from memory import MemoryStore
 import tempfile
 import mimetypes
-from dotenv import load_dotenv
-# from utils.auth import get_current_user
-from utils.s3 import upload_to_s3
-from utils.embedding import embed_and_store
-from utils.qa import retrieve_and_answer
-
+import os
 # Load environment variables
 load_dotenv()
-
 app = FastAPI()
 
 app.add_middleware(
@@ -27,18 +23,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DEMO_USER = {"sub": "7000"}
+memory_store = MemoryStore()
 
-class QuestionRequest(BaseModel):
-    question: str
-    user_id: str
+@app.post("/query", response_model=QueryResponse)
+async def query_llm(request: QueryRequest):
+    retrieved_chunks = query_pinecone(request, user_id=request.user_id)
+    history = memory_store.get_history(
+        user_id=request.user_id,
+        industry=request.industry,
+        sub_industry=request.sme_context.sub_industry,
+        plant_name=request.sme_context.plant_name
+    )
 
+    answer, internal_source, external_source, document_percent, external_use, followingup = ask_claude(
+        query=request.query,
+        context_chunks=retrieved_chunks,
+        industry=request.industry,
+        sme_context=request.sme_context,
+        use_external=request.use_external,
+        history=history)
+    
+    memory_store.add_entry(
+        user_id=request.user_id,
+        industry=request.industry,
+        sub_industry=request.sme_context.sub_industry,
+        plant_name=request.sme_context.plant_name,
+        question=request.query,
+        answer=answer
+    )
+
+    return QueryResponse(
+        answer=answer,
+        sources=[internal_source, external_source],
+        transparency=[document_percent, external_use],
+        follow_up_questions=followingup
+    )
 
 @app.post("/upload")
 async def upload_document(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    document_name: str = Form(...),
+    document_type: str = Form(...),
+    industry: str = Form(...),
+    sub_industry: str = Form(...),
+    plant_name: str = Form(None),
+    user_id: str = Form(None)  # Optional, pass if using private KB
 ):
-    user = DEMO_USER  # Replace with get_current_user() for real authentication
     ext = os.path.splitext(file.filename)[1].lower()
     print(tempfile.gettempdir())
     print("Uploading file:", file.filename, "with extension:", ext)
@@ -52,14 +82,14 @@ async def upload_document(
         tmp.flush()
         os.fsync(tmp.fileno())
     print("Temporary file created at:", tmp_path)
-    s3_url = upload_to_s3(tmp_path, file.filename, user['sub'])
-    embed_and_store(tmp_path, file.filename, user['sub'])
-    os.remove(tmp_path)
-    return {"message": "Upload and indexing complete", "s3_url": s3_url}
-
-
-@app.post("/ask")
-def ask_question(req: QuestionRequest):
-    user = DEMO_USER
-    answer, sources = retrieve_and_answer(req.question, req.user_id )
-    return {"answer": answer, "sources": sources}
+    
+    await upsert_document(
+        file=tmp_path,
+        document_name=document_name,
+        document_type=document_type,
+        industry=industry,
+        sub_industry=sub_industry,
+        plant_name=plant_name,
+        user_id=user_id
+    )
+    return {"status": "success"}

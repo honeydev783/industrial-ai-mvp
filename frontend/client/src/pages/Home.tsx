@@ -15,7 +15,9 @@ export default function Home() {
   const [criticalEquipment, setCriticalEquipment] = useState("");
   const [allowExternalKnowledge, setAllowExternalKnowledge] = useState(true);
   const queryClient = useQueryClient();
-
+  const [knownChallenges, setKnownChallenges] = useState("");
+  const [regulations, setRegulations] = useState("");
+  const [notes, setNotes] = useState("");
   // Load existing SME context
   const { data: existingContext } = useQuery<SMEContext>({
     queryKey: ["/api/sme-context"],
@@ -72,9 +74,15 @@ export default function Home() {
         plantName={plantName}
         keyProcesses={keyProcesses}
         criticalEquipment={criticalEquipment}
+        knownChallenges={knownChallenges}
+        regulations = {regulations}
+        notes = {notes}
         onPlantNameChange={setPlantName}
         onKeyProcessesChange={setKeyProcesses}
         onCriticalEquipmentChange={setCriticalEquipment}
+        onKnownChallengesChange={setKnownChallenges}
+        onRegulationsChange = {setRegulations}
+        onNotesChange={setNotes}
       />
       
       <ExternalKnowledgeToggle

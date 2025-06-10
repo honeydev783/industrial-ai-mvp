@@ -6,18 +6,30 @@ interface SMEContextFormProps {
   plantName: string;
   keyProcesses: string;
   criticalEquipment: string;
+  knownChallenges: string;
+  regulations: string;
+  notes : string;
   onPlantNameChange: (value: string) => void;
   onKeyProcessesChange: (value: string) => void;
   onCriticalEquipmentChange: (value: string) => void;
+  onKnownChallengesChange: (value: string) => void;
+  onRegulationsChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
 }
 
 export function SMEContextForm({
   plantName,
   keyProcesses,
   criticalEquipment,
+  knownChallenges,
+  regulations,
+  notes,
   onPlantNameChange,
   onKeyProcessesChange,
   onCriticalEquipmentChange,
+  onKnownChallengesChange,
+  onRegulationsChange,
+  onNotesChange
 }: SMEContextFormProps) {
   return (
     <div className="step-container">
@@ -77,6 +89,52 @@ export function SMEContextForm({
             className="w-full resize-none"
           />
         </div>
+
+        {/* Known Chanllenges/ Issues */}
+        <div className="lg:col-span-2">
+          <Label htmlFor="known-challenges" className="block text-sm font-medium mb-2">
+            Known Challenges / Issues <span className="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="known-challenges"
+            rows={4}
+            placeholder="e.g., Foaming, pump cavitation"
+            value={knownChallenges}
+            onChange={(e) => onKnownChallengesChange(e.target.value)}
+            className="w-full resize-none"
+          />
+        </div>
+
+        {/* Regulations/ Standards */}
+        <div className="lg:col-span-2">
+          <Label htmlFor="regulations" className="block text-sm font-medium mb-2">
+            Regulations / Standards <span className="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="regulations"
+            rows={4}
+            placeholder="e.g., FSANZ, ISO 22000"
+            value={regulations}
+            onChange={(e) => onRegulationsChange(e.target.value)}
+            className="w-full resize-none"
+          />
+        </div>
+
+        {/* Notes for AI Prompting/ Issues */}
+        <div className="lg:col-span-2">
+          <Label htmlFor="notes-for-prompting" className="block text-sm font-medium mb-2">
+            Notes for AI Prompting <span className="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="notes-for-prompting"
+            rows={4}
+            placeholder="e.g. Refer to cleaning skid as CIP-01"
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            className="w-full resize-none"
+          />
+        </div>
+
       </div>
     </div>
   );

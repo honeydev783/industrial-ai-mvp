@@ -9,9 +9,10 @@ interface IndustrySelectionProps {
 export function IndustrySelection({ value, onChange }: IndustrySelectionProps) {
   const industries = [
     { value: "feed-milling", label: "Feed Milling" },
-    { value: "dairy-processing", label: "Dairy Processing" },
-    { value: "food-manufacturing", label: "Food Manufacturing" },
-    { value: "chemical-processing", label: "Chemical Processing" },
+    { value: "food-beveraging", label: "Food & Beverage" },
+    { value: "pharmaceuticals", label: "Pharmaceuticals" },
+    { value: "water-treatment", label: "Water Treatment" },
+    { value: "general-manufacturing", label: "General Manufacturing"}
   ];
 
   return (

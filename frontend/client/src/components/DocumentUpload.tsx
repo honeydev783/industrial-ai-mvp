@@ -2,14 +2,20 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, File, X, FileText, FileSpreadsheet } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Document } from "@shared/schema";
-
+import CreatableSelect from "react-select/creatable";
 interface UploadedFile {
   id: number;
   fileName: string;
@@ -18,14 +24,205 @@ interface UploadedFile {
   fileSize: number;
   uploadedAt: Date;
 }
-
+const customStyles = {
+  control: (provided) => ({
+    ...provided,
+    backgroundColor: "black",
+    color: "white",
+    borderColor: "gray",
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: "white",
+  }),
+  menu: (provided) => ({
+    ...provided,
+    backgroundColor: "black",
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isFocused
+      ? "#333" // dark gray on hover
+      : "black",
+    color: "white",
+    cursor: "pointer",
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: "white",
+  }),
+  placeholder: (provided) => ({
+    ...provided,
+    color: "#ccc",
+  }),
+};
 export function DocumentUpload() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [pairs, setPairs] = useState([
+    {
+      label: "Standard Operating Procedure",
+      description: "Step-by-step operations guide",
+    },
+    {
+      label: "Control Narrative",
+      description: "Automation logic and sequences",
+    },
+    {
+      label: "P&ID",
+      description: "Diagram of process equipment and instrumentation",
+    },
+    {
+      label: "General Process Description",
+      description: "Overview of entire process",
+    },
+    {
+      label: "Detailed Process Description",
+      description: "Unit-level technical explanation",
+    },
+    {
+      label: "Equipment Datasheet",
+      description: "Specs for equipment performance",
+    },
+    {
+      label: "Equipment Operational Manual",
+      description: "Usage and troubleshooting guide",
+    },
+    {
+      label: "Alarm Response Manual",
+      description: "Instructions for alarm handling",
+    },
+    {
+      label: "Cause & Effect Matrix",
+      description: "Logic table for fault actions",
+    },
+    {
+      label: "Tag Dictionary",
+      description: "Signal/tag definitions from SCADA",
+    },
+    {
+      label: "Operating Logs",
+      description: "Shift-based observations",
+    },
+    {
+      label: "OEM Manual",
+      description: "Manufacturer-supplied instructions",
+    },
+    {
+      label: "Industry Regulations",
+      description: "Compliance references",
+    },
+    {
+      label: "Safety Datasheet",
+      description: "Hazardous materials info",
+    },
+    {
+      label: "Industry Reference",
+      description: "Trusted external expert documents",
+    },
+    {
+      label: "Industry Bible",
+      description: "Deep technical reference manuals",
+    },
+    {
+      label: "Process Control Philosophy",
+      description: "Rationale behind automation design",
+    },
+    {
+      label: "Design Basis",
+      description: "Engineering assumptions and design limits",
+    },
+    {
+      label: "Commissioning Report",
+      description: "As-built test results",
+    },
+    {
+      label: "SCADA/Historian Export",
+      description: "Time-series signal data",
+    },
+    {
+      label: "Training Manual",
+      description: "Onboarding content for operators",
+    },
+    {
+      label: "Maintenance Record",
+      description: "Service history and issues",
+    },
+    {
+      label: "Audit Report",
+      description: "Quality or safety inspection outcome",
+    },
+    {
+      label: "Root Cause Analysis",
+      description: "Post-failure investigation",
+    },
+    {
+      label: "Engineering Change Notice",
+      description: "Change logs or design updates",
+    },
+    {
+      label: "KPI Report",
+      description: "Operational performance metrics",
+    },
+  ]);
 
-  const { data: documents = [], isLoading } = useQuery<Omit<Document, 'fileContent'>[]>({
+  const [selectedType, setSelectedType] = useState(null);
+  const [selectedDescription, setSelectedDescription] = useState(null);
+
+  const getTypeOptions = () => {
+    const uniqueTypes = Array.from(new Set(pairs.map((pair) => pair.label)));
+    return uniqueTypes.map((label) => ({ value: label, label: label }));
+  };
+
+  const handleTypeChange = (newType) => {
+    setSelectedType(newType);
+    setSelectedDescription(null);
+  };
+
+  const handleDescriptionChange = (newDescription) => {
+    setSelectedDescription(newDescription);
+  };
+
+  const getDescriptionOptions = (type) => {
+    return pairs
+      .filter((pair) => pair.label === type)
+      .map((pair) => ({ value: pair.description, label: pair.description }));
+  };
+
+  const handleAddPair = () => {
+    if (selectedType && selectedDescription) {
+      const exists = pairs.some(
+        (pair) =>
+          pair.label === selectedType.value &&
+          pair.description === selectedDescription.value
+      );
+
+      if (!exists) {
+        setPairs((prev) => [
+          ...prev,
+          {
+            label: selectedType.value,
+            description: selectedDescription.value,
+          },
+        ]);
+        toast({
+          title: "Success",
+          description: "New pair added!",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "This pair already exists",
+        });
+      }
+    }
+  };
+
+  const { data: documents = [], isLoading } = useQuery<
+    Omit<Document, "fileContent">[]
+  >({
     queryKey: ["/api/documents"],
   });
 
@@ -78,24 +275,16 @@ export function DocumentUpload() {
     },
   });
 
-  const documentTypes = [
-    { value: "sop", label: "Standard Operating Procedure" },
-    { value: "manual", label: "Equipment Manual" },
-    { value: "spec", label: "Technical Specification" },
-    { value: "report", label: "Process Report" },
-    { value: "other", label: "Other" },
-  ];
-
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach((file) => {
       // Validate file type
       const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/csv',
-        'text/plain'
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/csv",
+        "text/plain",
       ];
 
       if (!allowedTypes.includes(file.type)) {
@@ -118,9 +307,9 @@ export function DocumentUpload() {
       }
 
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('customName', file.name);
-      formData.append('documentType', 'other');
+      formData.append("file", file);
+      formData.append("customName", file.name);
+      formData.append("documentType", "other");
 
       uploadMutation.mutate(formData);
     });
@@ -143,13 +332,13 @@ export function DocumentUpload() {
   };
 
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf':
+      case "pdf":
         return <File className="text-red-500" />;
-      case 'docx':
+      case "docx":
         return <FileText className="text-blue-500" />;
-      case 'csv':
+      case "csv":
         return <FileSpreadsheet className="text-green-500" />;
       default:
         return <FileText className="text-gray-500" />;
@@ -157,25 +346,28 @@ export function DocumentUpload() {
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - new Date(date).getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
+    const diffInMinutes = Math.floor(
+      (now.getTime() - new Date(date).getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   };
 
   return (
@@ -186,7 +378,9 @@ export function DocumentUpload() {
         </div>
         <div className="ml-4">
           <h2 className="step-title">Upload Documents</h2>
-          <p className="step-description">Upload your reference documents with type classification</p>
+          <p className="step-description">
+            Upload your reference documents with type classification
+          </p>
         </div>
       </div>
 
@@ -203,12 +397,13 @@ export function DocumentUpload() {
         onClick={() => fileInputRef.current?.click()}
       >
         <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">Drop files here or click to browse</h3>
-        <p className="text-muted-foreground mb-4">Supports PDF, DOCX, CSV, TXT files up to 10MB each</p>
-        <Button
-          variant="outline"
-          disabled={uploadMutation.isPending}
-        >
+        <h3 className="text-lg font-medium mb-2">
+          Drop files here or click to browse
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Supports PDF, DOCX, CSV, TXT files up to 10MB each
+        </p>
+        <Button variant="outline" disabled={uploadMutation.isPending}>
           <Upload className="mr-2 h-4 w-4" />
           {uploadMutation.isPending ? "Uploading..." : "Select Files"}
         </Button>
@@ -223,76 +418,64 @@ export function DocumentUpload() {
       </div>
 
       {/* Uploaded Files List */}
-      {(documents.length > 0 || isLoading) && (
+      {
         <div className="mt-6 space-y-4">
-          <h4 className="text-sm font-medium">
-            Uploaded Documents ({documents.length})
-          </h4>
-          
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <Card key={i} className="p-4 animate-pulse">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-6 h-6 bg-muted rounded" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4" />
-                      <div className="h-3 bg-muted rounded w-1/2" />
-                    </div>
+          <h4 className="text-sm font-medium">Documents Properties</h4>
+
+          <div className="space-y-4">
+            <Card key="id" className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex-shrink-0">
+                    {/* {getFileIcon(document.fileName)} */}
                   </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {documents.map((document) => (
-                <Card key={document.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="flex-shrink-0">
-                        {getFileIcon(document.fileName)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between space-x-4">
+                      <div>
+                        <label className="font-semibold">Document Type</label>
+                        <CreatableSelect
+                          styles={customStyles}
+                          options={getTypeOptions()}
+                          onChange={handleTypeChange}
+                          value={selectedType}
+                          placeholder="Select or create type"
+                        />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-4">
-                          <Input
-                            value={document.customName}
-                            readOnly
-                            className="flex-1 text-sm"
-                          />
-                          <Select value={document.documentType} disabled>
-                            <SelectTrigger className="w-48">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {documentTypes.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {document.fileName} • {formatFileSize(document.fileSize)} • Uploaded {formatTimeAgo(document.uploadedAt)}
-                        </p>
+
+                      <div>
+                        <label className="font-semibold">Description</label>
+                        <CreatableSelect
+                          styles={customStyles}
+                          key={selectedType?.value}
+                          options={
+                            selectedType
+                              ? getDescriptionOptions(selectedType.value)
+                              : []
+                          }
+                          onChange={handleDescriptionChange}
+                          value={selectedDescription}
+                          placeholder="Select or create type"
+                          isDisabled={!selectedType}
+                        />
                       </div>
+                      <button
+                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
+                        onClick={handleAddPair}
+                        disabled={!selectedType || !selectedDescription}
+                      >
+                        Add Pair
+                      </button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(document.id)}
-                      disabled={deleteMutation.isPending}
-                      className="ml-4 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {/* {document.fileName} • {formatFileSize(document.fileSize)} • Uploaded {formatTimeAgo(document.uploadedAt)} */}
+                    </p>
                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
-      )}
+      }
     </div>
   );
 }
