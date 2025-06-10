@@ -27,6 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+DEMO_USER = {"sub": "7000"}
 
 class QuestionRequest(BaseModel):
     question: str
@@ -35,18 +36,22 @@ class QuestionRequest(BaseModel):
 
 @app.post("/upload")
 async def upload_document(
-    file: UploadFile = File(...),
-    user: dict = Depends(get_current_user)
+    file: UploadFile = File(...)
 ):
+    user = DEMO_USER  # Replace with get_current_user() for real authentication
     ext = os.path.splitext(file.filename)[1].lower()
+    print(tempfile.gettempdir())
+    print("Uploading file:", file.filename, "with extension:", ext)
     if ext not in [".pdf", ".doc", ".docx", ".txt", ".csv"]:
         raise HTTPException(status_code=400, detail="Unsupported file format")
 
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         content = await file.read()
         tmp.write(content)
         tmp_path = tmp.name
-
+        tmp.flush()
+        os.fsync(tmp.fileno())
+    print("Temporary file created at:", tmp_path)
     s3_url = upload_to_s3(tmp_path, file.filename, user['sub'])
     embed_and_store(tmp_path, file.filename, user['sub'])
     os.remove(tmp_path)
@@ -54,6 +59,7 @@ async def upload_document(
 
 
 @app.post("/ask")
-def ask_question(req: QuestionRequest, user: dict = Depends(get_current_user)):
-    answer, sources = retrieve_and_answer(req.question, req.user_id)
+def ask_question(req: QuestionRequest):
+    user = DEMO_USER
+    answer, sources = retrieve_and_answer(req.question, req.user_id )
     return {"answer": answer, "sources": sources}

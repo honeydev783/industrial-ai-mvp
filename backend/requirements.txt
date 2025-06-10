@@ -9,3 +9,4 @@ pinecone
 PyPDF2
 python-docx
 pinecone-client[grpc]
+textract 

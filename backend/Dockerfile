@@ -1,6 +1,6 @@
 # Use official Python base image
 FROM python:3.11-slim
-
+RUN apt-get update && apt-get install -y antiword
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

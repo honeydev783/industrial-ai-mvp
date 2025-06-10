@@ -1,0 +1,82 @@
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { PhaseNavigation } from "@/components/PhaseNavigation";
+import { useState } from "react";
+import { Factory } from "lucide-react";
+
+import Home from "@/pages/Home";
+import Phase2 from "@/pages/Phase2";
+import Phase3 from "@/pages/Phase3";
+import NotFound from "@/pages/not-found";
+
+function Router() {
+  const [currentPhase, setCurrentPhase] = useState(1);
+
+  const handlePhaseChange = (phase: number) => {
+    if (phase === 1) {
+      setCurrentPhase(1);
+    }
+    // Phase 2 and 3 are disabled for now
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo and Title */}
+            <div className="flex items-center space-x-4">
+              <div className="flex-shrink-0">
+                <Factory className="text-primary h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold">Document Q&A System</h1>
+                <p className="text-sm text-muted-foreground">Industrial Knowledge Assistant</p>
+              </div>
+            </div>
+
+            {/* Phase Navigation and Controls */}
+            <div className="flex items-center space-x-6">
+              <PhaseNavigation 
+                currentPhase={currentPhase} 
+                onPhaseChange={handlePhaseChange} 
+              />
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/phase2" component={Phase2} />
+          <Route path="/phase3" component={Phase3} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="doc-qa-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

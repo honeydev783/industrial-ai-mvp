@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom theme colors matching design */
+  --primary-50: hsl(210, 100%, 95%);
+  --primary-100: hsl(210, 100%, 90%);
+  --primary-500: hsl(207, 90%, 54%);
+  --primary-600: hsl(208, 79%, 51%);
+  --primary-700: hsl(211, 79%, 48%);
+  --primary-900: hsl(224, 76%, 48%);
+  
+  --secondary-50: hsl(200, 18%, 94%);
+  --secondary-100: hsl(204, 20%, 82%);
+  --secondary-500: hsl(200, 18%, 46%);
+  --secondary-600: hsl(200, 25%, 41%);
+  --secondary-700: hsl(200, 25%, 36%);
+  
+  --accent-500: hsl(14, 100%, 63%);
+  --accent-600: hsl(14, 100%, 57%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  
+  /* Dark mode custom colors */
+  --primary-50: hsl(210, 40%, 98%);
+  --primary-100: hsl(210, 100%, 90%);
+  --primary-500: hsl(207, 90%, 54%);
+  --primary-600: hsl(208, 79%, 51%);
+  --primary-700: hsl(211, 79%, 48%);
+  --primary-900: hsl(224, 76%, 18%);
+  
+  --secondary-50: hsl(200, 18%, 94%);
+  --secondary-100: hsl(204, 20%, 82%);
+  --secondary-500: hsl(200, 18%, 46%);
+  --secondary-600: hsl(200, 25%, 41%);
+  --secondary-700: hsl(200, 25%, 36%);
+  
+  --accent-500: hsl(14, 100%, 63%);
+  --accent-600: hsl(14, 100%, 57%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground opacity-30 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground opacity-50;
+  }
+}
+
+@layer components {
+  .step-container {
+    @apply bg-card rounded-xl shadow-sm border border-border p-6;
+  }
+  
+  .step-header {
+    @apply flex items-center mb-6;
+  }
+  
+  .step-number {
+    @apply flex-shrink-0 w-10 h-10 bg-primary bg-opacity-10 rounded-full flex items-center justify-center;
+  }
+  
+  .step-number-text {
+    @apply text-primary font-semibold;
+  }
+  
+  .step-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+  
+  .step-description {
+    @apply text-muted-foreground;
+  }
+}
+
+/* Custom utility classes */
+.text-primary-custom {
+  color: var(--primary-500);
+}
+
+.bg-primary-custom {
+  background-color: var(--primary-500);
+}
+
+.border-primary-custom {
+  border-color: var(--primary-500);
+}
+
+.hover\:bg-primary-custom:hover {
+  background-color: var(--primary-600);
+}
+
+.focus\:ring-primary-custom:focus {
+  --tw-ring-color: var(--primary-500);
+}

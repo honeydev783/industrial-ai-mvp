@@ -1,46 +1,38 @@
-# Dockerfile.frontend
-FROM node:18 AS builder
+# 1. Use Node image
+FROM node:20-alpine AS builder
+
+# 2. Set working directory
+WORKDIR /app
+
+# 3. Copy package.json + package-lock.json (or pnpm-lock.yaml if you use pnpm)
+COPY package.json package-lock.json* ./
+
+# 4. Install dependencies
+RUN npm install
+
+# 5. Copy all source files
+COPY . .
+
+# 6. Build React frontend and backend
+RUN npm run build
+
+# 7. Final stage — serve the app
+FROM node:20-alpine
 
 WORKDIR /app
 
-# COPY package*.json ./
-# COPY tsconfig.* ./
-# COPY vite.config.* ./
-# COPY index.html ./ 
-# COPY public ./
-# COPY src ./
-COPY . .
+# Copy node_modules and dist from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
 
-RUN npm install
-RUN npm run build
+# You probably want to serve the React app statically, so you may need to copy `dist` or `build` dir for React (depending on your vite config)
+# Assuming Vite outputs to `dist/` for frontend too — adjust if needed
 
-# Serve Stage with NGINX
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-# # Remove default config
-# RUN rm /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist ./dist
 
-# # Add custom config
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Expose port your Express server listens on (likely 3000)
+EXPOSE 3000
 
-# # Copy built static files
-# COPY --from=builder /app/dist /usr/share/nginx/html
-
-# EXPOSE 80
-
-# CMD ["nginx", "-g", "daemon off;"]
-# FROM node:18
-
-# WORKDIR /app
-# COPY frontend/ .
-# RUN npm install && npm run build
-# # Install serve to serve the production build
-# RUN npm install -g serve
-
-# # Tell Docker to expose port 3000
-# EXPOSE 3000
-
-# # Command to run the server
-# CMD ["serve", "-s", "build", "-l", "3000"]
+# Run the server
+CMD ["npm", "run", "start"]
