@@ -5,7 +5,6 @@ from typing import List, Optional
 
 class SMEContext(BaseModel):
     plant_name: Optional[str]
-    sub_industry: Optional[str]
     unit_process: Optional[str]
     key_processes: Optional[List[str]]
     equipment: Optional[List[str]]

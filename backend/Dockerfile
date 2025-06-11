@@ -1,6 +1,15 @@
 # Use official Python base image
 FROM python:3.11-slim
 RUN apt-get update && apt-get install -y antiword
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    tesseract-ocr \
+    && apt-get clean
+RUN apt-get update && apt-get install -y \
+    swig \
+    build-essential \
+    libpulse-dev \
+    && rm -rf /var/lib/apt/lists/*
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

@@ -13,7 +13,7 @@ def query_pinecone(request, user_id=None) -> List[dict]:
 
     filter_ = {
         "industry": request.industry,
-        "sub_industry": request.sme_context.sub_industry,
+        "plant_name": request.sme_context.plant_name,
     }
 
     # Optional: include user_id if using private knowledge base
@@ -36,9 +36,9 @@ def query_pinecone(request, user_id=None) -> List[dict]:
         })
     return chunks
 
-async def upsert_document(file, document_name, document_type, industry, sub_industry, plant_name, user_id=None):
+async def upsert_document(file, s3_url, document_name, document_type, industry,  plant_name, user_id=None):
     # Extract text chunks
-    extracted_chunks = extract_text_chunks(file)
+    extracted_chunks = extract_text_chunks(file, s3_url)
     print("extracted_chunks", extract_text_chunks)
     for i, chunk_text in enumerate(extracted_chunks):
         section = i + 1
@@ -47,7 +47,6 @@ async def upsert_document(file, document_name, document_type, industry, sub_indu
             "text": chunk_text,
             "source": f"{document_name} - Section: {section}",
             "industry": industry,
-            "sub_industry": sub_industry,
             "plant_name": plant_name,
         }
         if user_id:

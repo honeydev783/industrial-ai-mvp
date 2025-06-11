@@ -16,6 +16,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Document } from "@shared/schema";
 import CreatableSelect from "react-select/creatable";
+import axios from "axios";
+import { TailSpin } from 'react-loader-spinner';
+
+const FullScreenLoader = () => (
+    <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+        <TailSpin
+            height="60"
+            width="60"
+            color="#ffffff"
+            ariaLabel="loading"
+        />
+    </div>
+);
 interface UploadedFile {
   id: number;
   fileName: string;
@@ -23,6 +36,12 @@ interface UploadedFile {
   documentType: string;
   fileSize: number;
   uploadedAt: Date;
+}
+
+interface DocumentUploadProps {
+  industry: string;
+  plant_name: string;
+  user_id: number;
 }
 const customStyles = {
   control: (provided) => ({
@@ -56,7 +75,7 @@ const customStyles = {
     color: "#ccc",
   }),
 };
-export function DocumentUpload() {
+export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -167,7 +186,7 @@ export function DocumentUpload() {
       description: "Operational performance metrics",
     },
   ]);
-
+  const [isUploading, setIsUploading] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [selectedDescription, setSelectedDescription] = useState(null);
 
@@ -275,14 +294,15 @@ export function DocumentUpload() {
     },
   });
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach(async (file) => {
       // Validate file type
       const allowedTypes = [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
         "text/csv",
         "text/plain",
       ];
@@ -290,14 +310,14 @@ export function DocumentUpload() {
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload PDF, DOCX, CSV, or TXT files only",
+          description: "Please upload PDF, DOCX, DOC, CSV, or TXT files only",
           variant: "destructive",
         });
         return;
       }
 
       // Validate file size (10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 100 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Please upload files smaller than 10MB",
@@ -306,12 +326,77 @@ export function DocumentUpload() {
         return;
       }
 
+      console.log("File selected:", file.name);
+      if(!industry) {
+        toast({
+          title: "Missing Information",
+          description: "Industry information is required before uploading documents.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if(!plant_name) {
+        toast({
+          title: "Missing Information",
+          description: "Plant name information is required before uploading documents.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if(!selectedType?.value) {
+        toast({
+          title: "Missing Information",
+          description: "Document Type information is required before uploading documents.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if(!user_id) {
+        toast({
+          title: "Missing Information",
+          description: "User ID information is required before uploading documents.",
+          variant: "destructive",
+        });
+        return;
+      }
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("customName", file.name);
-      formData.append("documentType", "other");
+      formData.append("document_name", file.name);
+      formData.append("document_type", selectedType?.value);
+      formData.append("industry", industry);
+      formData.append("plant_name", plant_name);
+      formData.append("user_id", user_id.toString());
+      setIsUploading(true);
+      try {
+        const res = await axios.post("http://localhost:8000/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        
+        console.log("File uploaded successfully:", res.data);
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast({
+          title: "Upload Failed",
+          description: "There was an error uploading your file.",
+          variant: "destructive",
+        });
+        return;
+      } finally {
+          setIsUploading(false);
+          toast({
+          title: "Success",
+          description: "Uploading and Indexing was successfully completed",
+        });
+      }
+      
+      // alert("uploading now...");
+      // formData.append("customName", file.name);
+      // formData.append("documentType", "other");
 
-      uploadMutation.mutate(formData);
+      // uploadMutation.mutate(formData);
     });
   };
 
@@ -383,7 +468,7 @@ export function DocumentUpload() {
           </p>
         </div>
       </div>
-
+      {isUploading && <FullScreenLoader />}
       {/* Upload Area */}
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
@@ -401,7 +486,7 @@ export function DocumentUpload() {
           Drop files here or click to browse
         </h3>
         <p className="text-muted-foreground mb-4">
-          Supports PDF, DOCX, CSV, TXT files up to 10MB each
+          Supports PDF, DOCX, CSV, TXT files up to 100MB each
         </p>
         <Button variant="outline" disabled={uploadMutation.isPending}>
           <Upload className="mr-2 h-4 w-4" />

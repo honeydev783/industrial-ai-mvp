@@ -9,12 +9,14 @@ interface SMEContextFormProps {
   knownChallenges: string;
   regulations: string;
   notes : string;
+  unitProcess: string;
   onPlantNameChange: (value: string) => void;
   onKeyProcessesChange: (value: string) => void;
   onCriticalEquipmentChange: (value: string) => void;
   onKnownChallengesChange: (value: string) => void;
   onRegulationsChange: (value: string) => void;
   onNotesChange: (value: string) => void;
+  onUnitProcess: (value: string) => void;
 }
 
 export function SMEContextForm({
@@ -24,12 +26,14 @@ export function SMEContextForm({
   knownChallenges,
   regulations,
   notes,
+  unitProcess,
   onPlantNameChange,
   onKeyProcessesChange,
   onCriticalEquipmentChange,
   onKnownChallengesChange,
   onRegulationsChange,
-  onNotesChange
+  onNotesChange,
+  onUnitProcess
 }: SMEContextFormProps) {
   return (
     <div className="step-container">
@@ -86,6 +90,21 @@ export function SMEContextForm({
             placeholder="e.g., Pasteurization, Homogenization, Packaging..."
             value={keyProcesses}
             onChange={(e) => onKeyProcessesChange(e.target.value)}
+            className="w-full resize-none"
+          />
+        </div>
+
+        {/* Unit Processes (Full Width) */}
+        <div className="lg:col-span-2">
+          <Label htmlFor="unit-processes" className="block text-sm font-medium mb-2">
+            Unit Processes <span className="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="unit-processes"
+            rows={4}
+            placeholder="e.g., Pasteurization..."
+            value={unitProcess}
+            onChange={(e) => onUnitProcess(e.target.value)}
             className="w-full resize-none"
           />
         </div>

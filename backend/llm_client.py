@@ -18,7 +18,7 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external, histo
     contextually relevant answers based on the following inputs:
     Industry Context: Selected Industry: {industry}
     Context:
-    Plant or Sub-Industry Name: {sme_context.plant_name or sme_context.sub_industry}
+    Plant or Sub-Industry Name: {sme_context.plant_name}
     Unit Process: {sme_context.unit_process or 'N/A'}
     Key Processes: {', '.join(sme_context.key_processes or [])}
     Equipment: {', '.join(sme_context.equipment or [])}

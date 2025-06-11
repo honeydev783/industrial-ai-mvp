@@ -8,6 +8,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { SMEContext } from "@shared/schema";
 
+// interface smeContext {
+//   plantName: string;
+//   keyProcesses: string;
+//   criticalEquipment: string;
+//   knownChallenges: string;
+//   regulations: string;
+//   unitProcess: string;
+//   notes: string;
+// }
+
 export default function Home() {
   const [industry, setIndustry] = useState("feed-milling");
   const [plantName, setPlantName] = useState("");
@@ -18,6 +28,8 @@ export default function Home() {
   const [knownChallenges, setKnownChallenges] = useState("");
   const [regulations, setRegulations] = useState("");
   const [notes, setNotes] = useState("");
+  const [unitProcess, setUnitProcess] = useState("");
+  const user_id = 7000;
   // Load existing SME context
   const { data: existingContext } = useQuery<SMEContext>({
     queryKey: ["/api/sme-context"],
@@ -39,7 +51,11 @@ export default function Home() {
   const saveContextMutation = useMutation({
     mutationFn: async (contextData: any) => {
       if (existingContext) {
-        return await apiRequest("PUT", `/api/sme-context/${existingContext.id}`, contextData);
+        return await apiRequest(
+          "PUT",
+          `/api/sme-context/${existingContext.id}`,
+          contextData
+        );
       } else {
         return await apiRequest("POST", "/api/sme-context", contextData);
       }
@@ -64,35 +80,60 @@ export default function Home() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [industry, plantName, keyProcesses, criticalEquipment, allowExternalKnowledge]);
+  }, [
+    industry,
+    plantName,
+    keyProcesses,
+    criticalEquipment,
+    allowExternalKnowledge,
+  ]);
 
   return (
     <div className="space-y-8">
       <IndustrySelection value={industry} onChange={setIndustry} />
-      
+
       <SMEContextForm
         plantName={plantName}
         keyProcesses={keyProcesses}
         criticalEquipment={criticalEquipment}
         knownChallenges={knownChallenges}
-        regulations = {regulations}
-        notes = {notes}
+        regulations={regulations}
+        notes={notes}
+        unitProcess={unitProcess}
         onPlantNameChange={setPlantName}
         onKeyProcessesChange={setKeyProcesses}
         onCriticalEquipmentChange={setCriticalEquipment}
         onKnownChallengesChange={setKnownChallenges}
-        onRegulationsChange = {setRegulations}
+        onRegulationsChange={setRegulations}
         onNotesChange={setNotes}
+        onUnitProcess={setUnitProcess}
       />
-      
+
       <ExternalKnowledgeToggle
         value={allowExternalKnowledge}
         onChange={setAllowExternalKnowledge}
       />
-      
-      <DocumentUpload />
-      
-      <QuestionAnswering />
+
+      <DocumentUpload
+        industry={industry}
+        plant_name={plantName}
+        user_id={user_id}
+      />
+
+      <QuestionAnswering
+        industry={industry}
+        user_id={user_id}
+        use_external={allowExternalKnowledge}
+        sme_context={{
+          plantName,
+          keyProcesses,
+          criticalEquipment,
+          knownChallenges,
+          regulations,
+          notes,
+          unitProcess,
+        }}
+      />
     </div>
   );
 }

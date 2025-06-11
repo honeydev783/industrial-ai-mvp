@@ -11,6 +11,7 @@ from memory import MemoryStore
 import tempfile
 import mimetypes
 import os
+from utils import upload_to_s3
 # Load environment variables
 load_dotenv()
 app = FastAPI()
@@ -31,7 +32,6 @@ async def query_llm(request: QueryRequest):
     history = memory_store.get_history(
         user_id=request.user_id,
         industry=request.industry,
-        sub_industry=request.sme_context.sub_industry,
         plant_name=request.sme_context.plant_name
     )
 
@@ -46,7 +46,6 @@ async def query_llm(request: QueryRequest):
     memory_store.add_entry(
         user_id=request.user_id,
         industry=request.industry,
-        sub_industry=request.sme_context.sub_industry,
         plant_name=request.sme_context.plant_name,
         question=request.query,
         answer=answer
@@ -65,8 +64,7 @@ async def upload_document(
     document_name: str = Form(...),
     document_type: str = Form(...),
     industry: str = Form(...),
-    sub_industry: str = Form(...),
-    plant_name: str = Form(None),
+    plant_name: str = Form(...),
     user_id: str = Form(None)  # Optional, pass if using private KB
 ):
     ext = os.path.splitext(file.filename)[1].lower()
@@ -82,13 +80,14 @@ async def upload_document(
         tmp.flush()
         os.fsync(tmp.fileno())
     print("Temporary file created at:", tmp_path)
-    
+    s3_url = upload_to_s3(tmp_path, file.filename, user_id)
+    print("stored in s3 bucket===>:", s3_url)
     await upsert_document(
         file=tmp_path,
+        s3_url = s3_url,
         document_name=document_name,
         document_type=document_type,
         industry=industry,
-        sub_industry=sub_industry,
         plant_name=plant_name,
         user_id=user_id
     )

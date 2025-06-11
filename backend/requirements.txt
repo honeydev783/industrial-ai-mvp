@@ -8,4 +8,7 @@ requests
 pinecone
 PyPDF2
 python-docx
-textract 
+textract
+pytesseract
+Pillow
+pdf2image
