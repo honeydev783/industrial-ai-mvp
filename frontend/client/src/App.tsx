@@ -70,7 +70,7 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="doc-qa-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="doc-qa-theme">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
