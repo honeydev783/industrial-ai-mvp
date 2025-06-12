@@ -1,15 +1,25 @@
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface PhaseNavigationProps {
   currentPhase: number;
   onPhaseChange: (phase: number) => void;
 }
 
-export function PhaseNavigation({ currentPhase, onPhaseChange }: PhaseNavigationProps) {
+export function PhaseNavigation({
+  currentPhase,
+  onPhaseChange,
+}: PhaseNavigationProps) {
+  const [_, setLocation] = useLocation();
   const phases = [
-    { number: 1, label: "Phase 1", enabled: true },
-    { number: 2, label: "Phase 2", enabled: false },
-    { number: 3, label: "Phase 3", enabled: false },
+    { number: 1, label: "Data Warehouse", path: "/", enabled: true },
+    { number: 2, label: "Training", path: "/train", enabled: false },
+    {
+      number: 3,
+      label: "Industrial Intelligence",
+      path: "/qa",
+      enabled: true,
+    },
   ];
 
   return (
@@ -19,7 +29,12 @@ export function PhaseNavigation({ currentPhase, onPhaseChange }: PhaseNavigation
           key={phase.number}
           variant={currentPhase === phase.number ? "default" : "ghost"}
           size="sm"
-          onClick={() => phase.enabled && onPhaseChange(phase.number)}
+          onClick={() => {
+            if (phase.enabled) {
+              onPhaseChange(phase.number);
+              setLocation(phase.path);
+            }
+          }}
           disabled={!phase.enabled}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             currentPhase === phase.number

@@ -163,22 +163,22 @@ export function QuestionAnswering({
       });
       return;
     }
-    if (
-      !sme_context.plantName ||
-      !sme_context.keyProcesses ||
-      !sme_context.criticalEquipment ||
-      !sme_context.unitProcess ||
-      !sme_context.regulations ||
-      !sme_context.notes ||
-      !sme_context.knownChallenges
-    ) {
-      toast({
-        title: "Warning",
-        description: "Please provide SME context information first",
-        variant: "destructive",
-      });
-      return;
-    }
+    // if (
+    //   !sme_context.plantName ||
+    //   !sme_context.keyProcesses ||
+    //   !sme_context.criticalEquipment ||
+    //   !sme_context.unitProcess ||
+    //   !sme_context.regulations ||
+    //   !sme_context.notes ||
+    //   !sme_context.knownChallenges
+    // ) {
+    //   toast({
+    //     title: "Warning",
+    //     description: "Please provide SME context information first",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
     if (!user_id) {
       toast({
@@ -251,6 +251,11 @@ export function QuestionAnswering({
       setCurrentQuestion("");
     } catch (error) {
       console.log("Error submitting question:", error);
+      toast({
+        title: "Error",
+        description: "You exceeded the maximum token limit per minute. Please try again in a miniute.",
+        variant: "destructive",
+      });
     }
     finally {
       setIsUploading(false);
@@ -327,36 +332,6 @@ export function QuestionAnswering({
         </div>
       </div>
       {isUploading && <FullScreenLoader />}
-      {/* Question Input */}
-      <div className="mb-6">
-        <div className="flex space-x-4">
-          <div className="flex-1">
-            <Textarea
-              placeholder="Enter your question about the processes, equipment, or procedures..."
-              rows={3}
-              value={currentQuestion}
-              onChange={(e) => setCurrentQuestion(e.target.value)}
-              className="resize-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmitQuestion();
-                }
-              }}
-            />
-          </div>
-          <div className="flex flex-col justify-end">
-            <Button
-              onClick={handleSubmitQuestion}
-              disabled={questionMutation.isPending || !currentQuestion.trim()}
-              className="px-6 py-3 font-medium"
-            >
-              <Send className="mr-2 h-4 w-4" />
-              {questionMutation.isPending ? "Asking..." : "Ask"}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Q&A Results */}
       {(_questions.length > 0 || isShowing) && (
@@ -561,6 +536,37 @@ export function QuestionAnswering({
           </div>
         </div>
       )}
+
+      {/* Question Input */}
+      <div className="mb-6 mt-6">
+        <div className="flex space-x-6">
+          <div className="flex-1">
+            <Textarea
+              placeholder="Enter your question about the processes, equipment, or procedures..."
+              rows={3}
+              value={currentQuestion}
+              onChange={(e) => setCurrentQuestion(e.target.value)}
+              className="resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmitQuestion();
+                }
+              }}
+            />
+          </div>
+          <div className="flex flex-col justify-end">
+            <Button
+              onClick={handleSubmitQuestion}
+              disabled={questionMutation.isPending || !currentQuestion.trim()}
+              className="px-6 py-3 font-medium"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {questionMutation.isPending ? "Asking..." : "Ask"}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

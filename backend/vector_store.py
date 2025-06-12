@@ -36,7 +36,7 @@ def query_pinecone(request, user_id=None) -> List[dict]:
         })
     return chunks
 
-async def upsert_document(file, s3_url, document_name, document_type, industry,  plant_name, user_id=None):
+async def upsert_document(file, s3_url, document_name, document_type,  user_id=None):
     # Extract text chunks
     extracted_chunks = extract_text_chunks(file, s3_url)
     print("extracted_chunks", extract_text_chunks)
@@ -46,8 +46,6 @@ async def upsert_document(file, s3_url, document_name, document_type, industry, 
         metadata = {
             "text": chunk_text,
             "source": f"{document_name} - Section: {section}",
-            "industry": industry,
-            "plant_name": plant_name,
         }
         if user_id:
             metadata["user_id"] = user_id

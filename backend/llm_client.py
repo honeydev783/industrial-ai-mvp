@@ -7,7 +7,7 @@ import os
 client = boto3.client("bedrock-runtime", region_name=os.getenv("BEDROCK_REGION"))
 
 
-def ask_claude(query, context_chunks, industry, sme_context, use_external, history):
+def ask_claude(query, context_chunks, industry, sme_context, use_external):
     # Build system prompt
     use_external_str = "true" if use_external else "false"
 
@@ -15,24 +15,12 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external, histo
     You are an expert specialist in industrial process engineering, with deep knowledge
     across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
     Treatment, and General Manufacturing. Your role is to provide accurate, detailed, and
-    contextually relevant answers based on the following inputs:
-    Industry Context: Selected Industry: {industry}
-    Context:
-    Plant or Sub-Industry Name: {sme_context.plant_name}
-    Unit Process: {sme_context.unit_process or 'N/A'}
-    Key Processes: {', '.join(sme_context.key_processes or [])}
-    Equipment: {', '.join(sme_context.equipment or [])}
-    Known Issues: {', '.join(sme_context.known_issues or [])}
-    Regulations: {', '.join(sme_context.regulations or [])}
-    Notes: {sme_context.notes or ''}
-
+    contextually relevant answers:
     Retrieved Documents:
     {''.join([f"[{chunk['source']}]: {chunk['text']}" for chunk in context_chunks])}
-    Conversation history:
-    {history if history else 'None'}
     Instructions:
     - If use_external is false, you MUST answer ONLY using the Retrieved Documents above, citing the specific document and section where applicable.
-    - If use_external is true, you MUST combine the Retrieved Documents with your pretrained knowledge to provide a comprehensive answer. Use the documents as the primary source but supplement with your general knowledge to fill gaps, provide additional context, or include best practices from the industry.
+    - If use_external is true, you MUST combine the Retrieved Documents with your pretrained knowledge to provide a comprehensive answer. supplement with your general knowledge to fill gaps, provide additional context, or include best practices from the industry. In the end of the answer summarise all above points.
     - Ensure the response is grounded in the provided context but enriched with external knowledge when use_external is true.
     - Always respond ONLY in the following JSON format:
     {{
@@ -48,7 +36,7 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external, histo
     prompt_payload = {
         "anthropic_version": "bedrock-2023-05-31",
         "messages": [{"role": "user", "content": system_prompt}],
-        "max_tokens": 512,
+        "max_tokens": 1024,
         "temperature": 0.7,
     }
     response = client.invoke_model(

@@ -49,7 +49,7 @@ export function SMEContextForm({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Plant/Sub-Industry Name */}
-        <div>
+        {/* <div>
           <Label htmlFor="plant-name" className="block text-sm font-medium mb-2">
             Plant or Sub-Industry Name <span className="text-destructive">*</span>
           </Label>
@@ -61,10 +61,10 @@ export function SMEContextForm({
             onChange={(e) => onPlantNameChange(e.target.value)}
             className="w-full"
           />
-        </div>
+        </div> */}
 
         {/* Critical Equipment */}
-        <div>
+        {/* <div>
           <Label htmlFor="critical-equipment" className="block text-sm font-medium mb-2">
             Critical Equipment <span className="text-destructive">*</span>
           </Label>
@@ -77,10 +77,10 @@ export function SMEContextForm({
             className="w-full"
           />
           <p className="mt-1 text-xs text-muted-foreground">Separate multiple items with commas</p>
-        </div>
+        </div> */}
 
         {/* Key Processes (Full Width) */}
-        <div className="lg:col-span-2">
+        {/* <div className="lg:col-span-2">
           <Label htmlFor="key-processes" className="block text-sm font-medium mb-2">
             Key Processes / Workflows <span className="text-destructive">*</span>
           </Label>
@@ -92,10 +92,10 @@ export function SMEContextForm({
             onChange={(e) => onKeyProcessesChange(e.target.value)}
             className="w-full resize-none"
           />
-        </div>
+        </div> */}
 
         {/* Unit Processes (Full Width) */}
-        <div className="lg:col-span-2">
+        {/* <div className="lg:col-span-2">
           <Label htmlFor="unit-processes" className="block text-sm font-medium mb-2">
             Unit Processes <span className="text-destructive">*</span>
           </Label>
@@ -107,10 +107,10 @@ export function SMEContextForm({
             onChange={(e) => onUnitProcess(e.target.value)}
             className="w-full resize-none"
           />
-        </div>
+        </div> */}
 
         {/* Known Chanllenges/ Issues */}
-        <div className="lg:col-span-2">
+        {/* <div className="lg:col-span-2">
           <Label htmlFor="known-challenges" className="block text-sm font-medium mb-2">
             Known Challenges / Issues <span className="text-destructive">*</span>
           </Label>
@@ -122,10 +122,10 @@ export function SMEContextForm({
             onChange={(e) => onKnownChallengesChange(e.target.value)}
             className="w-full resize-none"
           />
-        </div>
+        </div> */}
 
         {/* Regulations/ Standards */}
-        <div className="lg:col-span-2">
+        {/* <div className="lg:col-span-2">
           <Label htmlFor="regulations" className="block text-sm font-medium mb-2">
             Regulations / Standards <span className="text-destructive">*</span>
           </Label>
@@ -137,7 +137,7 @@ export function SMEContextForm({
             onChange={(e) => onRegulationsChange(e.target.value)}
             className="w-full resize-none"
           />
-        </div>
+        </div> */}
 
         {/* Notes for AI Prompting/ Issues */}
         <div className="lg:col-span-2">
@@ -147,7 +147,7 @@ export function SMEContextForm({
           <Textarea
             id="notes-for-prompting"
             rows={4}
-            placeholder="e.g. Refer to cleaning skid as CIP-01"
+            placeholder="(optional) e.g. Refer to cleaning skid as CIP-01"
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             className="w-full resize-none"

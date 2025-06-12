@@ -10,8 +10,11 @@ from llm_client import ask_claude
 from memory import MemoryStore
 import tempfile
 import mimetypes
+import boto3
 import os
 from utils import upload_to_s3
+from urllib.parse import urlparse
+
 # Load environment variables
 load_dotenv()
 app = FastAPI()
@@ -25,15 +28,17 @@ app.add_middleware(
 )
 
 memory_store = MemoryStore()
+s3_client = boto3.client("s3")
+BUCKET_NAME = os.getenv("S3_BUCKET")
 
 @app.post("/query", response_model=QueryResponse)
 async def query_llm(request: QueryRequest):
     retrieved_chunks = query_pinecone(request, user_id=request.user_id)
-    history = memory_store.get_history(
-        user_id=request.user_id,
-        industry=request.industry,
-        plant_name=request.sme_context.plant_name
-    )
+    # history = memory_store.get_history(
+    #     user_id=request.user_id,
+    #     industry=request.industry,
+    #     plant_name=request.sme_context.plant_name
+    # )
 
     answer, internal_source, external_source, document_percent, external_use, followingup = ask_claude(
         query=request.query,
@@ -41,15 +46,15 @@ async def query_llm(request: QueryRequest):
         industry=request.industry,
         sme_context=request.sme_context,
         use_external=request.use_external,
-        history=history)
-    
-    memory_store.add_entry(
-        user_id=request.user_id,
-        industry=request.industry,
-        plant_name=request.sme_context.plant_name,
-        question=request.query,
-        answer=answer
     )
+    
+    # memory_store.add_entry(
+    #     user_id=request.user_id,
+    #     industry=request.industry,
+    #     plant_name=request.sme_context.plant_name,
+    #     question=request.query,
+    #     answer=answer
+    # )
 
     return QueryResponse(
         answer=answer,
@@ -63,8 +68,6 @@ async def upload_document(
     file: UploadFile = File(...),
     document_name: str = Form(...),
     document_type: str = Form(...),
-    industry: str = Form(...),
-    plant_name: str = Form(...),
     user_id: str = Form(None)  # Optional, pass if using private KB
 ):
     ext = os.path.splitext(file.filename)[1].lower()
@@ -87,8 +90,37 @@ async def upload_document(
         s3_url = s3_url,
         document_name=document_name,
         document_type=document_type,
-        industry=industry,
-        plant_name=plant_name,
         user_id=user_id
     )
     return {"status": "success"}
+
+@app.get("/files", response_model=List[str])
+async def list_user_files(user_id: str):
+    prefix = f"{user_id}/"
+    try:
+        response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=prefix)
+        contents = response.get("Contents", [])
+        file_urls = [f"s3://{BUCKET_NAME}/{obj['Key']}" for obj in contents]
+        return file_urls
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.delete("/delete-file")
+async def delete_file_by_s3_url(
+    s3_url: str):
+    try:
+        # Parse the S3 URL
+        parsed = urlparse(s3_url)
+        if parsed.scheme != "s3":
+            raise ValueError("Invalid S3 URI format")
+
+        bucket = parsed.netloc
+        key = parsed.path.lstrip("/")  # Remove leading slash from path
+
+        # Perform deletion
+        s3_client.delete_object(Bucket=bucket, Key=key)
+
+        return {"message": f"Successfully deleted from bucket: {bucket}"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

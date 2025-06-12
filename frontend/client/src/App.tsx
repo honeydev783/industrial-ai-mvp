@@ -20,8 +20,10 @@ function Router() {
   const handlePhaseChange = (phase: number) => {
     if (phase === 1) {
       setCurrentPhase(1);
+    } else if (phase === 3) {
+      setCurrentPhase(3);
     }
-    // Phase 2 and 3 are disabled for now
+    
   };
 
   return (
@@ -36,7 +38,7 @@ function Router() {
                 <Factory className="text-primary h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold">Document Q&A System</h1>
+                <h1 className="text-xl font-semibold">Industrial AI</h1>
                 <p className="text-sm text-muted-foreground">Industrial Knowledge Assistant</p>
               </div>
             </div>
@@ -57,8 +59,8 @@ function Router() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/phase2" component={Phase2} />
-          <Route path="/phase3" component={Phase3} />
+          <Route path="/train" component={Phase2} />
+          <Route path="/qa" component={Phase3} />
           <Route component={NotFound} />
         </Switch>
       </main>

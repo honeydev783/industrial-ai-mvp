@@ -18,7 +18,7 @@ import type { Document } from "@shared/schema";
 import CreatableSelect from "react-select/creatable";
 import axios from "axios";
 import { TailSpin } from 'react-loader-spinner';
-
+import S3FileTable from "./S3FileTable";
 const FullScreenLoader = () => (
     <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
         <TailSpin
@@ -39,8 +39,6 @@ interface UploadedFile {
 }
 
 interface DocumentUploadProps {
-  industry: string;
-  plant_name: string;
   user_id: number;
 }
 const customStyles = {
@@ -75,7 +73,7 @@ const customStyles = {
     color: "#ccc",
   }),
 };
-export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadProps) {
+export function DocumentUpload({user_id}:DocumentUploadProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -189,7 +187,7 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
   const [isUploading, setIsUploading] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [selectedDescription, setSelectedDescription] = useState(null);
-
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const getTypeOptions = () => {
     const uniqueTypes = Array.from(new Set(pairs.map((pair) => pair.label)));
     return uniqueTypes.map((label) => ({ value: label, label: label }));
@@ -327,22 +325,22 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
       }
 
       console.log("File selected:", file.name);
-      if(!industry) {
-        toast({
-          title: "Missing Information",
-          description: "Industry information is required before uploading documents.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if(!plant_name) {
-        toast({
-          title: "Missing Information",
-          description: "Plant name information is required before uploading documents.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // if(!industry) {
+      //   toast({
+      //     title: "Missing Information",
+      //     description: "Industry information is required before uploading documents.",
+      //     variant: "destructive",
+      //   });
+      //   return;
+      // }
+      // if(!plant_name) {
+      //   toast({
+      //     title: "Missing Information",
+      //     description: "Plant name information is required before uploading documents.",
+      //     variant: "destructive",
+      //   });
+      //   return;
+      // }
       if(!selectedType?.value) {
         toast({
           title: "Missing Information",
@@ -364,8 +362,8 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
       formData.append("file", file);
       formData.append("document_name", file.name);
       formData.append("document_type", selectedType?.value);
-      formData.append("industry", industry);
-      formData.append("plant_name", plant_name);
+      // formData.append("industry", industry);
+      // formData.append("plant_name", plant_name);
       formData.append("user_id", user_id.toString());
       setIsUploading(true);
       try {
@@ -374,22 +372,23 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
             "Content-Type": "multipart/form-data",
           },
         })
-        
+        setRefreshTrigger(prev => prev + 1);
+        toast({
+          title: "Success",
+          description: "Uploading and Indexing was successfully completed",
+        });
         console.log("File uploaded successfully:", res.data);
       } catch (error) {
         console.error("Error uploading file:", error);
         toast({
           title: "Upload Failed",
-          description: "There was an error uploading your file.",
+          description: "There was an error uploading your file. Please try again",
           variant: "destructive",
         });
         return;
       } finally {
           setIsUploading(false);
-          toast({
-          title: "Success",
-          description: "Uploading and Indexing was successfully completed",
-        });
+          
       }
       
       // alert("uploading now...");
@@ -457,7 +456,9 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
 
   return (
     <div className="step-container">
+      <S3FileTable userId={user_id.toString()} refreshTrigger={refreshTrigger} />
       <div className="step-header">
+        
         <div className="step-number">
           <span className="step-number-text">4</span>
         </div>
@@ -539,7 +540,7 @@ export function DocumentUpload({industry, plant_name, user_id}:DocumentUploadPro
                           }
                           onChange={handleDescriptionChange}
                           value={selectedDescription}
-                          placeholder="Select or create type"
+                          placeholder="Select or create description"
                           isDisabled={!selectedType}
                         />
                       </div>
