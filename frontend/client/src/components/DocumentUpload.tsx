@@ -293,6 +293,7 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
   });
 
   const handleFileUpload = async (files: FileList | null) => {
+    console.log("Files to upload:", files);
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach(async (file) => {
@@ -324,7 +325,7 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
         return;
       }
 
-      console.log("File selected:", file.name);
+      
       // if(!industry) {
       //   toast({
       //     title: "Missing Information",
@@ -347,6 +348,7 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
           description: "Document Type information is required before uploading documents.",
           variant: "destructive",
         });
+        fileInputRef.current!.value = "";
         return;
       }
       
@@ -356,6 +358,7 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
           description: "User ID information is required before uploading documents.",
           variant: "destructive",
         });
+        fileInputRef.current!.value = "";
         return;
       }
       const formData = new FormData();

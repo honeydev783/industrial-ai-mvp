@@ -142,12 +142,12 @@ export function SMEContextForm({
         {/* Notes for AI Prompting/ Issues */}
         <div className="lg:col-span-2">
           <Label htmlFor="notes-for-prompting" className="block text-sm font-medium mb-2">
-            Notes for AI Prompting <span className="text-destructive">*</span>
+            Notes for AI Prompting <span className="text-muted-foreground">(optional)</span>
           </Label>
           <Textarea
             id="notes-for-prompting"
             rows={4}
-            placeholder="(optional) e.g. Refer to cleaning skid as CIP-01"
+            placeholder="e.g. Refer to cleaning skid as CIP-01"
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             className="w-full resize-none"
