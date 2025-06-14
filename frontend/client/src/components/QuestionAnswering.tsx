@@ -198,8 +198,9 @@ export function QuestionAnswering({
         createdAt: new Date(),
         answers: [],
       };
+      console.log("use external source", use_external);
       const res = await axios.post(
-        "http://localhost:8000/query",
+        "https://datonyx.site/query",
         {
           query: currentQuestion,
           industry: industry,
@@ -264,8 +265,82 @@ export function QuestionAnswering({
     //questionMutation.mutate(currentQuestion);
   };
 
-  const handleFollowUpClick = (question: string) => {
+  const handleFollowUpClick =async (question: string) => {
     setCurrentQuestion(question);
+    setIsUploading(true);
+    try {
+      const id = Date.now() + Math.floor(Math.random() * 1000);
+      const newQuestion: QuestionWithAnswers = {
+        id,
+        questionText: currentQuestion,
+        contextId: null,
+        createdAt: new Date(),
+        answers: [],
+      };
+      console.log("use external source", use_external);
+      const res = await axios.post(
+        "https://datonyx.site/query",
+        {
+          query: question,
+          industry: industry,
+          user_id: user_id.toString(),
+          use_external: use_external,
+          sme_context: {
+            plant_name: sme_context.plantName,
+            key_processes: [sme_context.keyProcesses],
+            equipment: [sme_context.criticalEquipment],
+            known_issues: [sme_context.knownChallenges],
+            regulations: [sme_context.regulations],
+            unit_process: sme_context.unitProcess,
+            notes: sme_context.notes,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Response from backend:", res.data);
+
+      const answer = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        questionId: id,
+        answerText: res.data.answer,
+        sources: res.data.sources.map((source: any, index: number) =>
+          index === 0
+            ? {
+                type: "document",
+                name: source,
+              }
+            : {
+                type: "external",
+                name: source,
+              }
+        ),
+        transparency: {
+          documentPercentage: parseFloat(res.data.transparency[0]),
+          externalPercentage: res.data.transparency[1] == "true" ? (100-parseFloat(res.data.transparency[0])) : 0,
+        },
+        followUpSuggestions: res.data.follow_up_questions || [],
+        createdAt: new Date(),
+      };
+      newQuestion.answers.push(answer);
+      _setQuestions((prev) => [...prev, newQuestion]);
+      // setIsShowing(true);
+      setCurrentQuestion("");
+    } catch (error) {
+      console.log("Error submitting question:", error);
+      toast({
+        title: "Error",
+        description: "You exceeded the maximum token limit per minute. Please try again in a miniute.",
+        variant: "destructive",
+      });
+    }
+    finally {
+      setIsUploading(false);
+      
+    }
   };
 
   const handleFeedback = (

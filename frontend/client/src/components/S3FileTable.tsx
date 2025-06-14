@@ -12,7 +12,7 @@ export default function S3FileTable({ userId, refreshTrigger } : S3FileTableProp
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/files?user_id=${userId}`);
+      const res = await fetch(`https://datonyx.site/files?user_id=${userId}`);
       const data = await res.json();
       console.log("Fetched files:", data);
       setFiles(data || []);
@@ -27,7 +27,7 @@ export default function S3FileTable({ userId, refreshTrigger } : S3FileTableProp
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
       const res = await fetch(
-        `http://localhost:8000/delete-file?s3_url=${encodeURIComponent(s3Url)}`,
+        `https://datonyx.site/delete-file?s3_url=${encodeURIComponent(s3Url)}`,
         { method: "DELETE" }
       );
       if (res.ok) {

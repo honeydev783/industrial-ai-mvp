@@ -24,11 +24,6 @@ export default function Phase3() {
 
   return (
     <div className="space-y-8">
-
-      <ExternalKnowledgeToggle
-        value={allowExternalKnowledge}
-        onChange={setAllowExternalKnowledge}
-      />
       <QuestionAnswering
         industry={industry}
         user_id={user_id}
@@ -42,6 +37,10 @@ export default function Phase3() {
           notes,
           unitProcess,
         }}
+      />
+      <ExternalKnowledgeToggle
+        value={allowExternalKnowledge}
+        onChange={setAllowExternalKnowledge}
       />
     </div>
   );

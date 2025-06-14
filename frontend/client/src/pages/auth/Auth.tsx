@@ -6,6 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectItem } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import {
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+} from "@radix-ui/react-select";
 export default function AuthForm() {
   const [, setLocation] = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -113,9 +118,14 @@ export default function AuthForm() {
                     setForm({ ...form, userType: value })
                   }
                 >
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="trainer">Trainer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectTrigger className="h-9 text-sm px-3 py-1.5 bg-transparent border-none focus:ring-0 focus:outline-none focus-visible:ring-0">
+                    <SelectValue placeholder="Select user type" />
+                  </SelectTrigger>
+                  <SelectContent className="text-red-500">
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="trainer">Trainer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             )}

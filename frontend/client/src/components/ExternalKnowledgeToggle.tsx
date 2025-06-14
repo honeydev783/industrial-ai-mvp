@@ -9,7 +9,7 @@ interface ExternalKnowledgeToggleProps {
 export function ExternalKnowledgeToggle({ value, onChange }: ExternalKnowledgeToggleProps) {
   return (
     <div className="step-container">
-      <div className="step-header">
+      {/* <div className="step-header">
         <div className="step-number">
           <span className="step-number-text">3</span>
         </div>
@@ -17,7 +17,7 @@ export function ExternalKnowledgeToggle({ value, onChange }: ExternalKnowledgeTo
           <h2 className="step-title">Knowledge Source Configuration</h2>
           <p className="step-description">Configure how AI should handle external knowledge</p>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex items-start space-x-4">
         <div className="flex items-center h-5 mt-1">

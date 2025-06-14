@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,10 +16,12 @@ import Phase3 from "@/pages/Phase3";
 import NotFound from "@/pages/not-found";
 import AuthForm from "@/pages/auth/Auth";
 import { useAuth } from "@/contexts/AuthContext";
-
+import LogoutButton from "@/components/LogoutButton";
+import { set } from "date-fns";
 function Router() {
   const [currentPhase, setCurrentPhase] = useState(1);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const handlePhaseChange = (phase: number) => {
     if (phase === 1) {
       setCurrentPhase(1);
@@ -26,6 +29,11 @@ function Router() {
       setCurrentPhase(3);
     }
   };
+  const handleLogout = () => {
+    navigate("/");
+    logout();
+    // window.localStorage.removeItem("token");
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,6 +63,7 @@ function Router() {
                 onPhaseChange={handlePhaseChange}
               />
               <ThemeToggle />
+              <LogoutButton onLogout={handleLogout} />
             </div>
           </div>
         </div>

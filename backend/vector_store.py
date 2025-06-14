@@ -9,11 +9,12 @@ pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 index = pc.Index(name=os.getenv("PINECONE_INDEX_NAME"))
 
 def query_pinecone(request, user_id=None) -> List[dict]:
-    query_embedding = embed_text(request.query + " " + str(request.sme_context.dict()))
+    # query_embedding = embed_text(request.query + " " + str(request.sme_context.dict()))
+    query_embedding = embed_text(request.query)
 
     filter_ = {
-        "industry": request.industry,
-        "plant_name": request.sme_context.plant_name,
+        # "industry": request.industry,
+        # "plant_name": request.sme_context.plant_name,
     }
 
     # Optional: include user_id if using private knowledge base

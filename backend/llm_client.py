@@ -11,28 +11,49 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
     # Build system prompt
     use_external_str = "true" if use_external else "false"
 
-    system_prompt = f"""Human:
-    You are an expert specialist in industrial process engineering, with deep knowledge
-    across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
-    Treatment, and General Manufacturing. Your role is to provide accurate, detailed, and
-    contextually relevant answers:
-    Retrieved Documents:
-    {''.join([f"[{chunk['source']}]: {chunk['text']}" for chunk in context_chunks])}
-    Instructions:
-    - If use_external is false, you MUST answer ONLY using the Retrieved Documents above, citing the specific document and section where applicable.
-    - If use_external is true, you MUST combine the Retrieved Documents with your pretrained knowledge to provide a comprehensive answer. supplement with your general knowledge to fill gaps, provide additional context, or include best practices from the industry. In the end of the answer summarise all above points.
-    - Ensure the response is grounded in the provided context but enriched with external knowledge when use_external is true.
-    - Always respond ONLY in the following JSON format:
-    {{
-    "answer": "insert main answer here",
-    "internal_source": "insert source of answer from Retrieved Documents here e.g.'Source: Pelleting_SOP.pdf – Section: Moisture Conditioning'",
-    "external_source": "insert source of answer from external knowledge here e.g.'External: FMT Journal 2022'",
-    "document_grounding_percent" : "Estimated percent of answer based on retrieved documents (e.g., 93)",
-    "used_external_knowledge": "{use_external_str}",
-    "following_up" : ["suggested following up question 1 for the next conversation", "suggested following up question 2 for the next conversation"]
-    }}
-     Question: {query}  Assistant:"""
-
+    if not use_external:
+        system_prompt = f"""Human:
+        You are an expert specialist in industrial process engineering, with deep knowledge
+        across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
+        Treatment, and General Manufacturing. Your role is to provide accurate, detailed, and
+        contextually relevant answers:
+        Retrieved Documents:
+        {''.join([f"[{chunk['source']}]: {chunk['text']}" for chunk in context_chunks])}
+        
+        Instructions:
+        -  you MUST answer EXCLUSIVELY using the Retrieved Documents above. If the documents do not contain enough information to answer the question, respond with: "Insufficient information in the provided documents to answer the query."
+        - Always respond ONLY in the following JSON format:
+        {{
+            "answer": "insert main answer here",
+            "internal_source": "insert source of answer from Retrieved Documents here e.g. 'Source: Pelleting_SOP.pdf – Section: Moisture Conditioning'",
+            "external_source": "",
+            "document_grounding_percent": "Estimated percent of answer based on retrieved documents (e.g., 93)",
+            "used_external_knowledge": "{use_external_str}",
+            "following_up": ["suggested follow-up question 1 for the next conversation", "suggested follow-up question 2 for the next conversation"]
+        }}
+        
+        Question: {query} Assistant:"""
+    else:
+        system_prompt = f"""Human:
+        You are an expert specialist in industrial process engineering, with deep knowledge
+        across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
+        Treatment, and General Manufacturing. Your role is to provide accurate, detailed, and
+        contextually relevant answers:
+        Retrieved Documents:
+        {''.join([f"[{chunk['source']}]: {chunk['text']}" for chunk in context_chunks])}        
+        Instructions:
+        - First use the Retrieved Documents above to answer the question. If there is no answer in the Retrieved Documents, then use your own knowledge to answer the question.
+        - Always respond ONLY in the following JSON format:
+        {{
+            "answer": "insert main answer here",
+            "internal_source": "insert source of answer from Retrieved Documents here e.g. 'Source: Pelleting_SOP.pdf – Section: Moisture Conditioning'",
+            "external_source": "insert source of answer from pretrained knowledge here e.g. 'External: FMT Journal 2022'",
+            "document_grounding_percent": "0",
+            "used_external_knowledge": "{use_external_str}",
+            "following_up": ["suggested follow-up question 1 for the next conversation", "suggested follow-up question 2 for the next conversation"]
+        }}
+        
+        Question: {query} Assistant:"""
     prompt_payload = {
         "anthropic_version": "bedrock-2023-05-31",
         "messages": [{"role": "user", "content": system_prompt}],
