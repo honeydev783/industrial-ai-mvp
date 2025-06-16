@@ -16,17 +16,12 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import axios from "axios";
-import { TailSpin } from 'react-loader-spinner';
+import { TailSpin } from "react-loader-spinner";
 
 const FullScreenLoader = () => (
-    <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-        <TailSpin
-            height="60"
-            width="60"
-            color="#ffffff"
-            ariaLabel="loading"
-        />
-    </div>
+  <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+    <TailSpin height="60" width="60" color="#ffffff" ariaLabel="loading" />
+  </div>
 );
 interface SMEContext {
   plantName: string;
@@ -52,7 +47,7 @@ interface QuestionWithAnswers {
   answers: Array<{
     id: number;
     questionId: number;
-    answerText: string;
+    answerText: string[];
     sources: Array<{
       type: "document" | "external";
       name: string;
@@ -129,7 +124,7 @@ export function QuestionAnswering({
       //   rating,
       //   comment,
       // });
-      return {'success': true}; // Mock response for testing
+      return { success: true }; // Mock response for testing
     },
     onSuccess: () => {
       toast({
@@ -241,7 +236,10 @@ export function QuestionAnswering({
         ),
         transparency: {
           documentPercentage: parseFloat(res.data.transparency[0]),
-          externalPercentage: res.data.transparency[1] == "true" ? (100-parseFloat(res.data.transparency[0])) : 0,
+          externalPercentage:
+            res.data.transparency[1] == "true"
+              ? 100 - parseFloat(res.data.transparency[0])
+              : 0,
         },
         followUpSuggestions: res.data.follow_up_questions || [],
         createdAt: new Date(),
@@ -254,18 +252,17 @@ export function QuestionAnswering({
       console.log("Error submitting question:", error);
       toast({
         title: "Error",
-        description: "You exceeded the maximum token limit per minute. Please try again in a miniute.",
+        description:
+          "You exceeded the maximum token limit per minute. Please try again in a miniute.",
         variant: "destructive",
       });
-    }
-    finally {
+    } finally {
       setIsUploading(false);
-      
     }
     //questionMutation.mutate(currentQuestion);
   };
 
-  const handleFollowUpClick =async (question: string) => {
+  const handleFollowUpClick = async (question: string) => {
     setCurrentQuestion(question);
     setIsUploading(true);
     try {
@@ -320,7 +317,10 @@ export function QuestionAnswering({
         ),
         transparency: {
           documentPercentage: parseFloat(res.data.transparency[0]),
-          externalPercentage: res.data.transparency[1] == "true" ? (100-parseFloat(res.data.transparency[0])) : 0,
+          externalPercentage:
+            res.data.transparency[1] == "true"
+              ? 100 - parseFloat(res.data.transparency[0])
+              : 0,
         },
         followUpSuggestions: res.data.follow_up_questions || [],
         createdAt: new Date(),
@@ -333,13 +333,12 @@ export function QuestionAnswering({
       console.log("Error submitting question:", error);
       toast({
         title: "Error",
-        description: "You exceeded the maximum token limit per minute. Please try again in a miniute.",
+        description:
+          "You exceeded the maximum token limit per minute. Please try again in a miniute.",
         variant: "destructive",
       });
-    }
-    finally {
+    } finally {
       setIsUploading(false);
-      
     }
   };
 
@@ -454,8 +453,12 @@ export function QuestionAnswering({
                     {question.answers.map((answer) => (
                       <div key={answer.id} className="ml-11 mb-4">
                         <Card className="p-4">
-                          <p className="mb-4">{answer.answerText}</p>
-
+                          <p className="mb-4">
+                            {answer.answerText[0]}
+                          </p>
+                          <p className="mb-4">
+                            {answer.answerText[1]}
+                          </p>
                           {/* Sources */}
                           <div className="border-t border-border pt-3 mt-3">
                             <p className="text-xs font-medium mb-2">Sources:</p>

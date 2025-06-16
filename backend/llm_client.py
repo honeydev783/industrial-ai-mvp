@@ -24,7 +24,7 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
         -  you MUST answer EXCLUSIVELY using the Retrieved Documents above. If the documents do not contain enough information to answer the question, respond with: "Insufficient information in the provided documents to answer the query."
         - Always respond ONLY in the following JSON format:
         {{
-            "answer": "insert main answer here",
+            "answer": ["insert main answer here", ""],
             "internal_source": "insert source of answer from Retrieved Documents here e.g. 'Source: Pelleting_SOP.pdf – Section: Moisture Conditioning'",
             "external_source": "",
             "document_grounding_percent": "Estimated percent of answer based on retrieved documents (e.g., 93)",
@@ -42,10 +42,10 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
         Retrieved Documents:
         {''.join([f"[{chunk['source']}]: {chunk['text']}" for chunk in context_chunks])}        
         Instructions:
-        - First use the Retrieved Documents above to answer the question. If there is no answer in the Retrieved Documents, then use your own knowledge to answer the question.
+        - First use the Retrieved Documents above to answer the question. And then use your own knowledge to answer the question.
         - Always respond ONLY in the following JSON format:
         {{
-            "answer": "insert main answer here",
+            "answer": ["answer from Retrieved Documents", "answer from pretrained knowledge"],
             "internal_source": "insert source of answer from Retrieved Documents here e.g. 'Source: Pelleting_SOP.pdf – Section: Moisture Conditioning'",
             "external_source": "insert source of answer from pretrained knowledge here e.g. 'External: FMT Journal 2022'",
             "document_grounding_percent": "0",

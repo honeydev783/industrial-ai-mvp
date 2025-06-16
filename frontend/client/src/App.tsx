@@ -18,6 +18,7 @@ import AuthForm from "@/pages/auth/Auth";
 import { useAuth } from "@/contexts/AuthContext";
 import LogoutButton from "@/components/LogoutButton";
 import { set } from "date-fns";
+import Logo from "@/components/Logo";
 function Router() {
   const [currentPhase, setCurrentPhase] = useState(1);
   const { user, logout } = useAuth();
@@ -46,13 +47,14 @@ function Router() {
             {/* Logo and Title */}
             <div className="flex items-center space-x-4">
               <div className="flex-shrink-0">
-                <Factory className="text-primary h-8 w-8" />
+                {/* <Factory className="text-primary h-8 w-8" /> */}
               </div>
               <div>
-                <h1 className="text-xl font-semibold">Industrial AI</h1>
+                {/* <h1 className="text-xl font-semibold">Industrial AI</h1>
                 <p className="text-sm text-muted-foreground">
                   Industrial Knowledge Assistant
-                </p>
+                </p> */}
+                <Logo size="md" />
               </div>
             </div>
 

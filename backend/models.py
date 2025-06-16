@@ -20,7 +20,7 @@ class QueryRequest(BaseModel):
     use_external: bool
 
 class QueryResponse(BaseModel):
-    answer: str
+    answer: List[str]
     sources: List[str]
     transparency: List[str]
     follow_up_questions: List[str]
