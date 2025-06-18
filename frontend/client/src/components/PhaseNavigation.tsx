@@ -13,7 +13,7 @@ export function PhaseNavigation({
   const [_, setLocation] = useLocation();
   const phases = [
     { number: 1, label: "Data Warehouse", path: "/", enabled: true },
-    { number: 2, label: "Training", path: "/train", enabled: false },
+    { number: 2, label: "Training", path: "/train", enabled: true },
     {
       number: 3,
       label: "Industrial Intelligence",
