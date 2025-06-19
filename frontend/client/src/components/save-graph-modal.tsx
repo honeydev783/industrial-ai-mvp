@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import api from "@/lib/api";
 import type { AnnotationMarker } from "@shared/schema";
 
 interface SaveGraphModalProps {
@@ -32,29 +32,31 @@ export function SaveGraphModal({
   });
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const saveMutation = useMutation({
-    mutationFn: async (graphData: any) => {
-      const response = await apiRequest('POST', '/api/saved-graphs', graphData);
-      return await response.json();
-    },
-    onSuccess: () => {
+  const saveGraph = async (graphData: any) => {
+    try {
+      setIsLoading(true);
+      await api.post('/api/saved-graphs', graphData);
+      
+      // Invalidate saved graphs cache to refresh the list immediately
       queryClient.invalidateQueries({ queryKey: ['/api/saved-graphs'] });
+      
       toast({
         title: "Graph Saved",
         description: "Your graph has been saved successfully",
       });
       handleClose();
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       toast({
         title: "Failed to Save Graph",
-        description: error.message || "Failed to save graph",
+        description: error.response?.data?.detail || error.message || "Failed to save graph",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
 
   const handleClose = () => {
     setFormData({
@@ -65,7 +67,7 @@ export function SaveGraphModal({
     onOpenChange(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "Invalid Input",
@@ -99,7 +101,7 @@ export function SaveGraphModal({
       },
     };
 
-    saveMutation.mutate(graphData);
+    await saveGraph(graphData);
   };
 
   return (
@@ -197,10 +199,10 @@ export function SaveGraphModal({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saveMutation.isPending || !formData.name.trim() || selectedTags.length === 0}
+            disabled={isLoading || !formData.name.trim() || selectedTags.length === 0}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {saveMutation.isPending ? "Saving..." : "Save Graph"}
+            {isLoading ? "Saving..." : "Save Graph"}
           </Button>
         </DialogFooter>
       </DialogContent>

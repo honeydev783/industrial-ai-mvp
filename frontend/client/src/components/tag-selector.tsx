@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -7,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tags, X, AlertTriangle } from "lucide-react";
 import type { TagInfo } from "@shared/schema";
+import api from "@/lib/api";
 
 interface TagSelectorProps {
   selectedTags: string[];
@@ -16,11 +16,28 @@ interface TagSelectorProps {
 
 export function TagSelector({ selectedTags, onTagSelection, maxTags }: TagSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [availableTags, setAvailableTags] = useState<TagInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: availableTags = [], isLoading } = useQuery<TagInfo[]>({
-    queryKey: ['/api/tags'],
-    enabled: true,
-  });
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        setIsLoading(true);
+        console.log(import.meta.env.VITE_API_BASE_URL);
+
+        const response = await api.get('/api/tags');
+        console.log("Fetched tags:", response.data);
+        setAvailableTags(response.data);
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+        setAvailableTags([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
 
   const filteredTags = availableTags.filter(tag =>
     tag.tagLabel.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CloudUpload, CheckCircle, AlertCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import api from "@/lib/api";
 
 interface UploadResult {
   success: boolean;
@@ -14,59 +13,70 @@ interface UploadResult {
   errors?: string[];
 }
 
-export function FileUpload() {
+interface FileUploadProps {
+  onFileUploaded?: () => void;
+}
+
+export function FileUpload({ onFileUploaded }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadResult(null);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => Math.min(prev + 10, 90));
+    }, 200);
+
+    try {
+      const response = await api.post('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-      try {
-        const response = await apiRequest('POST', '/api/upload', formData);
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-        
-        if (response.headers.get('content-type')?.includes('application/json')) {
-          return await response.json();
-        } else {
-          throw new Error('Invalid response format');
-        }
-      } catch (error) {
-        clearInterval(progressInterval);
-        setUploadProgress(0);
-        throw error;
-      }
-    },
-    onSuccess: (result: UploadResult) => {
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      const result = response.data as UploadResult;
       setUploadResult(result);
-      queryClient.invalidateQueries({ queryKey: ['/api/tags'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/timeseries'] });
       
       toast({
         title: "Upload Successful",
         description: `Processed ${result.rowsInserted} data points`,
       });
-    },
-    onError: (error: any) => {
+
+      if (onFileUploaded) {
+        onFileUploaded();
+      }
+      
+      return result;
+    } catch (error: any) {
+      clearInterval(progressInterval);
       setUploadProgress(0);
+      setUploadResult(null);
+      
       toast({
         title: "Upload Failed",
-        description: error.message || "Failed to upload file",
+        description: error.response?.data?.detail || error.message || "Failed to upload file",
         variant: "destructive",
       });
+      
+      throw error;
+    } finally {
+      setIsUploading(false);
     }
-  });
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -97,14 +107,11 @@ export function FileUpload() {
     }
   };
 
-  const handleFileUpload = (file: File) => {
-    const allowedTypes = ['.csv', '.xlsx', '.xls'];
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    
-    if (!allowedTypes.includes(fileExtension)) {
+  const handleFileUpload = async (file: File) => {
+    if (!file.name.match(/\.(csv|xlsx)$/i)) {
       toast({
-        title: "Invalid File Format",
-        description: "Please upload CSV or Excel files only",
+        title: "Invalid File",
+        description: "Please upload a CSV or Excel file",
         variant: "destructive",
       });
       return;
@@ -113,15 +120,17 @@ export function FileUpload() {
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
       toast({
         title: "File Too Large",
-        description: "Please upload files smaller than 10MB",
+        description: "Please upload a file smaller than 10MB",
         variant: "destructive",
       });
       return;
     }
 
-    setUploadProgress(0);
-    setUploadResult(null);
-    uploadMutation.mutate(file);
+    try {
+      await uploadFile(file);
+    } catch (error) {
+      // Error already handled in uploadFile
+    }
   };
 
   const clearUploadResult = () => {
@@ -133,85 +142,107 @@ export function FileUpload() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card
-        className={`border-2 border-dashed transition-colors cursor-pointer ${
-          isDragOver 
-            ? 'border-blue-500 bg-blue-500/10' 
-            : uploadResult?.success
-            ? 'border-emerald-500 bg-emerald-500/10'
-            : 'border-slate-600 hover:border-blue-500'
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <CardContent className="p-6 text-center">
-          {uploadMutation.isPending ? (
-            <div className="space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-sm text-slate-300">Uploading and processing...</p>
+    <Card className="w-full">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <CloudUpload className="h-5 w-5" />
+            <h3 className="font-medium">Upload Time Series Data</h3>
+          </div>
+          
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isDragOver
+                ? "border-blue-400 bg-blue-50 dark:bg-blue-950"
+                : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="space-y-2">
+              <CloudUpload className="mx-auto h-12 w-12 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Drag & drop your CSV or Excel file here, or{" "}
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:text-blue-500 underline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    browse
+                  </button>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  Supports CSV and Excel files up to 10MB
+                </p>
+              </div>
+            </div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </div>
+
+          {isUploading && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
               <Progress value={uploadProgress} className="w-full" />
             </div>
-          ) : uploadResult ? (
-            <div className="space-y-2">
-              <CheckCircle className="h-8 w-8 text-emerald-400 mx-auto" />
-              <p className="text-sm text-slate-300">File processed successfully</p>
-              <p className="text-xs text-slate-400">
-                {uploadResult.rowsInserted} rows • {new Date().toLocaleTimeString()}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <CloudUpload className="h-8 w-8 text-slate-400 mx-auto" />
-              <p className="text-sm text-slate-300">Drag & drop CSV/Excel files here</p>
-              <p className="text-xs text-slate-400">or click to browse</p>
+          )}
+
+          {uploadResult && (
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {uploadResult.success ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  )}
+                  <span className="font-medium">
+                    {uploadResult.success ? "Upload Complete" : "Upload Failed"}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearUploadResult}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <p>Rows processed: {uploadResult.rowsProcessed}</p>
+                <p>Rows inserted: {uploadResult.rowsInserted}</p>
+                {uploadResult.errors && uploadResult.errors.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-red-600 font-medium">Errors:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {uploadResult.errors.slice(0, 3).map((error, index) => (
+                        <li key={index} className="text-red-600">{error}</li>
+                      ))}
+                      {uploadResult.errors.length > 3 && (
+                        <li className="text-red-600">... and {uploadResult.errors.length - 3} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </CardContent>
-      </Card>
-
-      {uploadResult && (
-        <Card className="bg-slate-700 border-slate-600">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {uploadResult.success ? (
-                  <CheckCircle className="h-4 w-4 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-red-400" />
-                )}
-                <span className="text-sm text-slate-300">
-                  {uploadResult.success ? 'Upload Complete' : 'Upload Failed'}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearUploadResult}
-                className="h-6 w-6 p-0 text-slate-400 hover:text-slate-100"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {uploadResult.rowsInserted} rows processed
-              {uploadResult.errors && uploadResult.errors.length > 0 && (
-                <span className="text-amber-400"> • {uploadResult.errors.length} warnings</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

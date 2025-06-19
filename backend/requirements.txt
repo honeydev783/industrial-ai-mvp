@@ -12,3 +12,7 @@ textract
 pytesseract
 Pillow
 pdf2image
+pandas
+psycopg2-binary
+openpyxl
+sqlalchemy

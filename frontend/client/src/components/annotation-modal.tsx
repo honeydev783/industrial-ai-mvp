@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import api from '@/lib/api';
 import type { TagInfo, AnnotationMarker } from '@shared/schema';
 
 interface AnnotationModalProps {
@@ -42,8 +44,10 @@ export function AnnotationModal({
   onCreateAnnotation 
 }: AnnotationModalProps) {
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Good');
+  const [category, setCategory] = useState('Normal');
   const [severity, setSeverity] = useState('Low');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   // Set predefined description for region annotations
   useEffect(() => {
@@ -56,61 +60,84 @@ export function AnnotationModal({
 
   if (!annotationData) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!description.trim()) return;
 
-    const baseAnnotation = {
-      id: Date.now(), // Temporary ID, will be replaced by backend
-      tagId: annotationData.tagId,
-      type: annotationData.type,
-      category,
-      severity,
-      description: description.trim(),
-    };
+    setIsSubmitting(true);
 
-    if (annotationData.type === 'point') {
+    try {
+      const annotationPayload = {
+        timestamp: annotationData.type === 'point' ? annotationData.timestamp!.toISOString() : annotationData.regionStart!.toISOString(),
+        tagId: annotationData.tagId,
+        type: annotationData.type,
+        category,
+        severity: severity.toLowerCase(),
+        value: annotationData.type === 'point' ? (annotationData.actualValue || 0) : 0,
+        normalizedValue: annotationData.type === 'point' ? (annotationData.normalizedValue || 0) : 0,
+        description: description.trim(),
+        regionStart: annotationData.type === 'region' ? annotationData.regionStart!.toISOString() : undefined,
+        regionEnd: annotationData.type === 'region' ? annotationData.regionEnd!.toISOString() : undefined,
+      };
+
+      const response = await api.post('/api/annotations', annotationPayload);
+      console.log("Annotation created response:", response.data);
+      const savedAnnotation = response.data;
+
+      // Convert the saved annotation to the format expected by the frontend
       const annotation: AnnotationMarker = {
-        ...baseAnnotation,
-        timestamp: annotationData.timestamp!,
-        value: annotationData.actualValue || 0,
-        normalizedValue: annotationData.normalizedValue || 0,
-      } as AnnotationMarker;
+        id: savedAnnotation.id,
+        timestamp: new Date(savedAnnotation.timestamp),
+        tagId: savedAnnotation.tagId,
+        type: savedAnnotation.type as 'point' | 'region',
+        category: savedAnnotation.category,
+        severity: savedAnnotation.severity,
+        value: savedAnnotation.value,
+        normalizedValue: savedAnnotation.normalizedValue,
+        description: savedAnnotation.description,
+        regionStart: savedAnnotation.regionStart ? new Date(savedAnnotation.regionStart) : undefined,
+        regionEnd: savedAnnotation.regionEnd ? new Date(savedAnnotation.regionEnd) : undefined,
+      };
 
       onCreateAnnotation(annotation);
-    } else if (annotationData.type === 'region') {
-      const annotation: AnnotationMarker = {
-        ...baseAnnotation,
-        timestamp: annotationData.regionStart!,
-        regionStart: annotationData.regionStart!,
-        regionEnd: annotationData.regionEnd!,
-        value: 0, // Region doesn't have a specific value
-        normalizedValue: 0,
-      } as AnnotationMarker;
 
-      onCreateAnnotation(annotation);
+      toast({
+        title: "Annotation Created",
+        description: `${annotationData.type === 'point' ? 'Point' : 'Region'} annotation saved successfully`,
+      });
+
+      // Reset form
+      setDescription('');
+      setCategory('Normal');
+      setSeverity('Low');
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Failed to Create Annotation",
+        description: error.response?.data?.detail || error.message || "Failed to save annotation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Reset form
-    setDescription('');
-    setCategory('Good');
-    setSeverity('Low');
-    onOpenChange(false);
   };
 
   const handleCancel = () => {
     setDescription('');
-    setCategory('Good');
+    setCategory('Normal');
     setSeverity('Low');
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-700">
+      <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-700" aria-describedby="annotation-dialog-description">
         <DialogHeader>
           <DialogTitle className="text-slate-100">
             Add {annotationData.type === 'point' ? 'Point' : 'Region'} Annotation
           </DialogTitle>
+          <div id="annotation-dialog-description" className="sr-only">
+            Create an annotation for the selected data point or region with description, category, and severity level.
+          </div>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -205,9 +232,9 @@ export function AnnotationModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
-                <SelectItem value="Good">Good</SelectItem>
-                <SelectItem value="Bad">Bad</SelectItem>
-                <SelectItem value="Fault">Fault</SelectItem>
+                <SelectItem value="Normal">Normal</SelectItem>
+                <SelectItem value="Warning">Warning</SelectItem>
+                <SelectItem value="Critical">Critical</SelectItem>
                 <SelectItem value="Anomaly">Anomaly</SelectItem>
               </SelectContent>
             </Select>
@@ -241,10 +268,10 @@ export function AnnotationModal({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!description.trim()}
+            disabled={!description.trim() || isSubmitting}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            Create Annotation
+            {isSubmitting ? 'Creating...' : 'Create Annotation'}
           </Button>
         </DialogFooter>
       </DialogContent>

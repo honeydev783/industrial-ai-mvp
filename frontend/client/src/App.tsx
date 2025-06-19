@@ -26,7 +26,10 @@ function Router() {
   const handlePhaseChange = (phase: number) => {
     if (phase === 1) {
       setCurrentPhase(1);
-    } else if (phase === 3) {
+    }else if (phase === 2) {
+      setCurrentPhase(2);
+    }
+     else if (phase === 3) {
       setCurrentPhase(3);
     }
   };

@@ -102,6 +102,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 // Time-series data point schema
+// Time-series data point schema
 export const timeSeriesData = pgTable("time_series_data", {
   id: serial("id").primaryKey(),
   timestamp: timestamp("timestamp").notNull(),
@@ -112,6 +113,7 @@ export const timeSeriesData = pgTable("time_series_data", {
   minRange: real("min_range").notNull(),
   maxRange: real("max_range").notNull(),
   normalizedValue: real("normalized_value").notNull(),
+  uploadSession: text("upload_session"), // Track which upload session this data belongs to
 });
 
 // Annotations schema
@@ -137,6 +139,7 @@ export const rules = pgTable("rules", {
   threshold: real("threshold").notNull(),
   thresholdMax: real("threshold_max"), // for 'between' condition
   severity: text("severity").notNull(),
+  description: text("description"),
   isActive: boolean("is_active").default(true),
 });
 
@@ -147,8 +150,7 @@ export const savedGraphs = pgTable("saved_graphs", {
   description: text("description"),
   selectedTags: json("selected_tags").notNull(), // Array of tag IDs
   timeWindow: text("time_window").notNull(),
-  includeAnnotations: boolean("include_annotations").default(false),
-  chartConfig: json("chart_config").notNull(),
+  annotations: json("annotations").notNull().default('[]'), // Array of annotations
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -228,16 +230,3 @@ export interface AnnotationMarker {
   regionStart?: Date;
   regionEnd?: Date;
 }
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type InsertDocument = z.infer<typeof insertDocumentSchema>;
-export type Document = typeof documents.$inferSelect;
-export type InsertSMEContext = z.infer<typeof insertSMEContextSchema>;
-export type SMEContext = typeof smeContexts.$inferSelect;
-export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
-export type Question = typeof questions.$inferSelect;
-export type InsertAnswer = z.infer<typeof insertAnswerSchema>;
-export type Answer = typeof answers.$inferSelect;
-export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
-export type Feedback = typeof feedback.$inferSelect;

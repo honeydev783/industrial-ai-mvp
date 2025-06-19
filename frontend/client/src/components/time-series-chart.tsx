@@ -80,6 +80,10 @@ export function TimeSeriesChart({
     return format(date, 'HH:mm:ss');
   };
 
+
+
+
+
   const handleChartClick = (data: any, event: any) => {
     if (!data?.activePayload?.[0] || !event || !currentMousePos) return;
 

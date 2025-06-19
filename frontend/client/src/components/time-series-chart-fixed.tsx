@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceDot, ReferenceArea } from "recharts";
 import { format } from "date-fns";
@@ -7,6 +6,7 @@ import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { TimeSeriesData, TagInfo, AnnotationMarker } from "@shared/schema";
 import { normalizeChartData, getTagColors } from "@/lib/chart-utils";
 import { AnnotationModal } from "./annotation-modal";
+import api from "@/lib/api";
 
 interface TimeSeriesChartProps {
   selectedTags: string[];
@@ -46,32 +46,153 @@ export function TimeSeriesChart({
   const chartRef = useRef<HTMLDivElement>(null);
   const timeAxisRef = useRef<HTMLDivElement>(null);
 
-  // Get available tags for color mapping
-  const { data: availableTags = [] } = useQuery<TagInfo[]>({
-    queryKey: ['/api/tags'],
-  });
+  // State for data fetching
+  const [availableTags, setAvailableTags] = useState<TagInfo[]>([]);
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Get time-series data
-  const { data: timeSeriesData = [], isLoading } = useQuery<TimeSeriesData[]>({
-    queryKey: ['/api/timeseries', selectedTags.join(','), timeWindow],
-    enabled: selectedTags.length > 0,
-  });
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await api.get('/api/tags');
+        setAvailableTags(response.data);
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    };
+
+    fetchTags();
+  }, []);
+
+  // Fetch time-series data
+  useEffect(() => {
+    if (selectedTags.length === 0) {
+      setTimeSeriesData([]);
+      return;
+    }
+
+    const fetchTimeSeriesData = async () => {
+      try {
+        setIsLoading(true);
+        const params = new URLSearchParams();
+        params.append('tagIds', selectedTags.join(','));
+        
+        // Set appropriate limit based on window selection
+        let limit = null;
+        
+        switch (timeWindow) {
+          case '100points':
+            limit = 100;
+            break;
+          case '1hour':
+          case '6hours':
+          case '24hours':
+            limit = 1000;
+            break;
+          default:
+            limit = 1000;
+        }
+        
+        if (limit) {
+          params.append('limit', limit.toString());
+        }
+
+        const response = await api.get(`/api/timeseries?${params.toString()}`);
+        setTimeSeriesData(response.data);
+      } catch (error) {
+        console.error('Failed to fetch time series data:', error);
+        setTimeSeriesData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTimeSeriesData();
+  }, [selectedTags, timeWindow]);
 
   const chartData = normalizeChartData(timeSeriesData, selectedTags);
   const tagColors = getTagColors(availableTags, selectedTags);
 
+  // Apply time window filtering based on actual data timestamps
+  const getTimeFilteredData = (data: any[]) => {
+    if (timeWindow === '100points' || data.length === 0) {
+      return data;
+    }
+
+    // Get the latest timestamp in the dataset
+    const timestamps = data.map(point => new Date(point.timestamp).getTime());
+    const latestTime = Math.max(...timestamps);
+    
+    let timeRangeMs = 0;
+    switch (timeWindow) {
+      case '1hour':
+        timeRangeMs = 60 * 60 * 1000;
+        break;
+      case '6hours':
+        timeRangeMs = 6 * 60 * 60 * 1000;
+        break;
+      case '24hours':
+        timeRangeMs = 24 * 60 * 60 * 1000;
+        break;
+      default:
+        return data;
+    }
+
+    const cutoffTime = latestTime - timeRangeMs;
+    return data.filter(point => {
+      const pointTime = new Date(point.timestamp).getTime();
+      return pointTime >= cutoffTime;
+    });
+  };
+
+  const timeFilteredData = getTimeFilteredData(chartData);
+
   // Apply zoom domain if set
   const filteredChartData = zoomDomain 
-    ? chartData.filter(point => {
+    ? timeFilteredData.filter(point => {
         const timestamp = new Date(point.timestamp).getTime();
         return timestamp >= zoomDomain.left && timestamp <= zoomDomain.right;
       })
-    : chartData;
+    : timeFilteredData;
 
-  // Custom tick formatter for 30-second intervals
+  // Calculate tick interval based on time window and data length
+  const getTickInterval = () => {
+    const dataLength = filteredChartData.length;
+    if (dataLength === 0) return 0;
+    
+    switch (timeWindow) {
+      case '100points':
+        return Math.ceil(dataLength / 10); // Show ~10 ticks
+      case '1hour':
+        return Math.ceil(dataLength / 12); // Show ~12 ticks (5-minute intervals)
+      case '6hours':
+        return Math.ceil(dataLength / 24); // Show ~24 ticks (15-minute intervals)
+      case '24hours':
+        return Math.ceil(dataLength / 24); // Show ~24 ticks (hourly intervals)
+      default:
+        return Math.ceil(dataLength / 15); // Default to ~15 ticks
+    }
+  };
+
+  const tickInterval = getTickInterval();
+
+  // Custom tick formatter based on time window
   const formatTimeTick = (tickItem: any) => {
     const date = new Date(tickItem);
-    return format(date, 'HH:mm:ss');
+    
+    switch (timeWindow) {
+      case '100points':
+        return format(date, 'HH:mm:ss');
+      case '1hour':
+        return format(date, 'HH:mm');
+      case '6hours':
+        return format(date, 'MMM dd HH:mm');
+      case '24hours':
+        return format(date, 'MMM dd HH:mm');
+      default:
+        return format(date, 'HH:mm:ss');
+    }
   };
 
   // Add mouse tracking to the chart container
@@ -219,36 +340,45 @@ export function TimeSeriesChart({
     const validEntries = payload.filter((entry: any) => 
       entry.value !== null && 
       entry.value !== undefined &&
-      selectedTags.includes(entry.dataKey)
+      selectedTags.includes(entry.dataKey) &&
+      typeof entry.value === 'number'
     );
     
     if (validEntries.length === 0) return null;
     
-    // Find the closest entry to cursor position
+    // Find the closest entry to cursor Y position
     let closestEntry = validEntries[0];
-    if (validEntries.length > 1 && coordinate) {
+    if (validEntries.length > 1 && coordinate && chartRef.current) {
       let minDistance = Infinity;
       
-      validEntries.forEach((entry: any) => {
-        // Get the actual pixel position of this data point from the chart
-        const chartContainer = chartRef.current?.querySelector('.recharts-wrapper');
-        if (chartContainer) {
-          const chartRect = chartContainer.getBoundingClientRect();
-          const chartHeight = chartRect.height - 100; // Account for margins
-          const chartTop = 20;
+      // Get actual chart dimensions from the rendered chart
+      const rechartsSurface = chartRef.current.querySelector('.recharts-surface');
+      if (rechartsSurface) {
+        const svgElement = rechartsSurface as SVGElement;
+        const svgRect = svgElement.getBoundingClientRect();
+        
+        // Find the actual plot area by looking at the chart structure
+        // Recharts typically uses margins: top: 5, right: 5, bottom: 5, left: 5 by default
+        // but our chart has custom margins due to axis labels
+        const actualChartHeight = svgRect.height;
+        const plotAreaHeight = actualChartHeight - 100; // Account for axis labels and margins
+        const plotAreaTop = 20; // Top margin for chart area
+        
+        validEntries.forEach((entry: any) => {
+          // Map the value (0-100) to the actual chart Y coordinate
+          // Y-axis is inverted: 100% at top, 0% at bottom
+          const valueRatio = entry.value / 100;
+          const lineY = plotAreaTop + (plotAreaHeight * (1 - valueRatio));
           
-          // Calculate Y position for this entry's normalized value (0-100%)
-          const normalizedY = chartTop + chartHeight * (1 - entry.value / 100);
-          
-          // Calculate distance from mouse position to this line point
-          const distance = Math.abs(coordinate.y - normalizedY);
+          // Calculate distance from mouse to this line
+          const distance = Math.abs(coordinate.y - lineY);
           
           if (distance < minDistance) {
             minDistance = distance;
             closestEntry = entry;
           }
-        }
-      });
+        });
+      }
     }
     
     const tag = availableTags.find(t => t.tagId === closestEntry.dataKey);
@@ -515,12 +645,31 @@ export function TimeSeriesChart({
           
           <div 
             ref={chartRef}
-            className="relative h-96 overflow-x-auto cursor-crosshair"
+            className="relative h-96 overflow-x-auto cursor-crosshair border border-slate-600 rounded"
+            style={{ 
+              width: '100%'
+            }}
             onMouseDown={(e) => {
               handleChartMouseDown(e.nativeEvent);
             }}
             onMouseMove={(e) => {
+              // Update mouse position for tooltip calculation
+              if (chartRef.current) {
+                const rect = chartRef.current.getBoundingClientRect();
+                setCurrentMousePos({
+                  x: e.clientX - rect.left,
+                  y: e.clientY - rect.top
+                });
+              }
               handleChartDragMove(e.nativeEvent);
+            }}
+            onMouseLeave={() => {
+              setCurrentMousePos(null);
+              setIsDragging(false);
+              setDragStartPos(null);
+              setDragCurrentPos(null);
+              setRegionStart(null);
+              setRegionEnd(null);
             }}
             onMouseUp={(e) => {
               handleChartMouseUp(e.nativeEvent);
@@ -539,7 +688,16 @@ export function TimeSeriesChart({
               />
             )}
             
-            <ResponsiveContainer width="100%" height="100%">
+            <div style={{
+              width: timeWindow === '24hours' ? '1200px' : 
+                     timeWindow === '6hours' ? '900px' : 
+                     timeWindow === '1hour' ? '600px' : '100%',
+              height: '100%'
+            }}>
+            <ResponsiveContainer 
+              width="100%" 
+              height="100%"
+            >
               <LineChart
                 data={filteredChartData}
                 onClick={handleChartClick}
@@ -553,7 +711,7 @@ export function TimeSeriesChart({
                   domain={['dataMin', 'dataMax']}
                   tickFormatter={formatTimeTick}
                   stroke="#9CA3AF"
-                  interval={Math.ceil(filteredChartData.length / 20)}
+                  interval={tickInterval}
                   angle={-45}
                   textAnchor="end"
                   height={80}
@@ -567,10 +725,10 @@ export function TimeSeriesChart({
                   content={<CustomTooltip />}
                   filterNull={true}
                   isAnimationActive={false}
-                  cursor={{ stroke: '#64748B', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  cursor={false}
                   allowEscapeViewBox={{ x: false, y: false }}
                   wrapperStyle={{ zIndex: 1000 }}
-                  trigger="hover"
+                  position={{ x: 0, y: 0 }}
                 />
                 
                 {/* Render normal lines for all tags */}
@@ -625,6 +783,14 @@ export function TimeSeriesChart({
                 })}
               </LineChart>
             </ResponsiveContainer>
+            </div>
+            
+            {/* Scroll indicator for larger time windows */}
+            {(timeWindow === '1hour' || timeWindow === '6hours' || timeWindow === '24hours') && (
+              <div className="text-xs text-slate-400 text-center mt-2 py-1 bg-slate-700 rounded">
+                ← Scroll horizontally to view full timeline →
+              </div>
+            )}
           </div>
           
           {/* Time axis drag area for zoom */}
