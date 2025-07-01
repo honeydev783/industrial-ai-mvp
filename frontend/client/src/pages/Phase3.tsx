@@ -19,7 +19,7 @@ export default function Phase3() {
   const [notes, setNotes] = useState("");
   const [unitProcess, setUnitProcess] = useState("");
   const user_id = 7000;
-  const [allowExternalKnowledge, setAllowExternalKnowledge] = useState(false);
+  const [allowExternalKnowledge, setAllowExternalKnowledge] = useState(1);
   
 
   return (

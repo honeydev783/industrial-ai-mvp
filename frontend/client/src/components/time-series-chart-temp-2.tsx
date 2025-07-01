@@ -20,7 +20,7 @@ interface TimeSeriesChartProps {
   zoom: number;
 }
 
-export function TimeSeriesChart({
+export function TimeSeriesChart2({
   selectedTags,
   timeWindow,
   annotations,
@@ -332,7 +332,7 @@ export function TimeSeriesChart({
           normalizedValue: clickedValue,
           actualValue: ((clickedValue / 100) * (tag.maxRange - tag.minRange) + tag.minRange)
         });
-        setShowAnnotationModal(true);
+        setShowAnnotationModal(false);
       }
     }
   };
@@ -393,7 +393,7 @@ export function TimeSeriesChart({
         valueRanges,
         duration: Math.round((endTimestamp.getTime() - startTimestamp.getTime()) / 60000) // Duration in minutes
       });
-      setShowAnnotationModal(true);
+      setShowAnnotationModal(false);
     }
   };
 
@@ -405,7 +405,7 @@ export function TimeSeriesChart({
   // Main component render
   if (selectedTags.length === 0) {
     return (
-      <Card className="border-slate-700">
+      <Card className="bg-card border-slate-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
@@ -611,7 +611,7 @@ export function TimeSeriesChart({
                           
                           return (
                             <div 
-                              className="border border-slate-600 rounded-lg p-3 shadow-xl"
+                              className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl"
                               style={{ 
                                 backgroundColor: 'rgb(30, 41, 59)', 
                                 borderColor: 'rgb(71, 85, 105)',

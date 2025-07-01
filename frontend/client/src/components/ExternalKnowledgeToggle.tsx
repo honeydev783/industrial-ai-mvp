@@ -1,12 +1,20 @@
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { set } from "date-fns";
+import e from "express";
 
 interface ExternalKnowledgeToggleProps {
-  value: boolean;
-  onChange: (value: boolean) => void;
+  value: number;
+  onChange: (value: number) => void;
 }
 
-export function ExternalKnowledgeToggle({ value, onChange }: ExternalKnowledgeToggleProps) {
+export function ExternalKnowledgeToggle({
+  value,
+  onChange,
+}: ExternalKnowledgeToggleProps) {
+  const [externalChecked, setExternalChecked] = useState(false);
+  const [timeSeriesChecked, setTimeSeriesChecked] = useState(false);
   return (
     <div className="step-container">
       {/* <div className="step-header">
@@ -23,18 +31,68 @@ export function ExternalKnowledgeToggle({ value, onChange }: ExternalKnowledgeTo
         <div className="flex items-center h-5 mt-1">
           <Checkbox
             id="external-knowledge"
-            checked={value}
-            onCheckedChange={onChange}
+            checked={externalChecked}
+            onCheckedChange={(checked) => {
+              if(checked === true) {
+                setExternalChecked(true);
+                setTimeSeriesChecked(false);
+                onChange(2); // Uncheck time series when external knowledge is enabled
+              } else {
+                setExternalChecked(false);
+                if (!timeSeriesChecked) {
+                  onChange(1);
+                }
+              }
+              // setExternalChecked(checked === true);
+              // if (timeSeriesChecked) {
+              //   setTimeSeriesChecked(false); // Uncheck time series when external knowledge is enabled
+              // }
+              // onChange(2);
+            }}
           />
         </div>
         <div className="flex-1">
-          <Label htmlFor="external-knowledge" className="font-medium cursor-pointer">
-            Allow AI to use external knowledge beyond uploaded documents
+          <Label
+            htmlFor="external-knowledge"
+            className="font-medium cursor-pointer"
+          >
+            Answer based on external knowledge beyond uploaded documents
           </Label>
-          <p className="mt-1 text-sm text-muted-foreground">
+          {/* <p className="mt-1 text-sm text-muted-foreground">
             When checked, AI may enhance document-based answers with pretrained domain knowledge. 
             When unchecked, responses will be based solely on uploaded documents (RAG only).
-          </p>
+          </p> */}
+        </div>
+
+        <div className="flex items-center h-5 mt-1">
+          <Checkbox
+            id="time-series"
+            checked={timeSeriesChecked}
+            onCheckedChange={(checked) => {
+              if(checked === true) {
+                setTimeSeriesChecked(true);
+                setExternalChecked(false);
+                onChange(3); // Uncheck time series when external knowledge is enabled
+              } else {
+                setTimeSeriesChecked(false);
+                if (!externalChecked) {
+                  onChange(1);
+                }
+              }
+            }}
+          />
+        </div>
+        <div className="flex-1">
+          <Label
+            htmlFor="external-knowledge"
+            className="font-medium cursor-pointer"
+          >
+            Answer based on uploaded time series data
+          </Label>
+          {/* <p className="mt-1 text-sm text-muted-foreground">
+            When checked, AI may enhance document-based answers with pretrained domain knowledge. 
+            When unchecked, responses will be based solely on uploaded documents (RAG only).
+          </p> */}
         </div>
       </div>
     </div>

@@ -17,17 +17,13 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Document } from "@shared/schema";
 import CreatableSelect from "react-select/creatable";
 import axios from "axios";
-import { TailSpin } from 'react-loader-spinner';
+import { TailSpin } from "react-loader-spinner";
 import S3FileTable from "./S3FileTable";
+import api from "@/lib/api";
 const FullScreenLoader = () => (
-    <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-        <TailSpin
-            height="60"
-            width="60"
-            color="#ffffff"
-            ariaLabel="loading"
-        />
-    </div>
+  <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+    <TailSpin height="60" width="60" color="#ffffff" ariaLabel="loading" />
+  </div>
 );
 interface UploadedFile {
   id: number;
@@ -44,36 +40,73 @@ interface DocumentUploadProps {
 const customStyles = {
   control: (provided) => ({
     ...provided,
-    backgroundColor: "black",
-    color: "white",
-    borderColor: "gray",
+    backgroundColor: "var(--card)",
+    color: "var(--card-foreground)",
+    borderColor: "var(--border)",
+    boxShadow: "none",
+    "&:hover": {
+      borderColor: "var(--border)",
+    },
   }),
   singleValue: (provided) => ({
     ...provided,
-    color: "white",
+    color: "var(--card-foreground)",
   }),
   menu: (provided) => ({
     ...provided,
-    backgroundColor: "black",
+    backgroundColor: "var(--card)",
+    color: "var(--card-foreground)",
   }),
   option: (provided, state) => ({
     ...provided,
     backgroundColor: state.isFocused
-      ? "#333" // dark gray on hover
-      : "black",
-    color: "white",
+      ? "var(--card-muted)" // You can define this in Tailwind config if needed
+      : "var(--card)",
+    color: "var(--card-foreground)",
     cursor: "pointer",
   }),
   input: (provided) => ({
     ...provided,
-    color: "white",
+    color: "var(--card-foreground)",
   }),
   placeholder: (provided) => ({
     ...provided,
-    color: "#ccc",
+    color: "var(--muted-foreground)", // Tailwind default or your own
   }),
 };
-export function DocumentUpload({user_id}:DocumentUploadProps) {
+// const customStyles = {
+//   control: (provided) => ({
+//     ...provided,
+//     backgroundColor: "black",
+//     color: "white",
+//     borderColor: "gray",
+//   }),
+//   singleValue: (provided) => ({
+//     ...provided,
+//     color: "white",
+//   }),
+//   menu: (provided) => ({
+//     ...provided,
+//     backgroundColor: "black",
+//   }),
+//   option: (provided, state) => ({
+//     ...provided,
+//     backgroundColor: state.isFocused
+//       ? "#333" // dark gray on hover
+//       : "black",
+//     color: "white",
+//     cursor: "pointer",
+//   }),
+//   input: (provided) => ({
+//     ...provided,
+//     color: "white",
+//   }),
+//   placeholder: (provided) => ({
+//     ...provided,
+//     color: "#ccc",
+//   }),
+// };
+export function DocumentUpload({ user_id }: DocumentUploadProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -325,7 +358,6 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
         return;
       }
 
-      
       // if(!industry) {
       //   toast({
       //     title: "Missing Information",
@@ -342,20 +374,22 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
       //   });
       //   return;
       // }
-      if(!selectedType?.value) {
+      if (!selectedType?.value) {
         toast({
           title: "Missing Information",
-          description: "Document Type information is required before uploading documents.",
+          description:
+            "Document Type information is required before uploading documents.",
           variant: "destructive",
         });
         fileInputRef.current!.value = "";
         return;
       }
-      
-      if(!user_id) {
+
+      if (!user_id) {
         toast({
           title: "Missing Information",
-          description: "User ID information is required before uploading documents.",
+          description:
+            "User ID information is required before uploading documents.",
           variant: "destructive",
         });
         fileInputRef.current!.value = "";
@@ -370,12 +404,12 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
       formData.append("user_id", user_id.toString());
       setIsUploading(true);
       try {
-        const res = await axios.post("https://datonyx.site/upload", formData, {
+        const res = await api.post("/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        })
-        setRefreshTrigger(prev => prev + 1);
+        });
+        setRefreshTrigger((prev) => prev + 1);
         toast({
           title: "Success",
           description: "Uploading and Indexing was successfully completed",
@@ -385,15 +419,15 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
         console.error("Error uploading file:", error);
         toast({
           title: "Upload Failed",
-          description: "There was an error uploading your file. Please try again",
+          description:
+            "There was an error uploading your file. Please try again",
           variant: "destructive",
         });
         return;
       } finally {
-          setIsUploading(false);
-          
+        setIsUploading(false);
       }
-      
+
       // alert("uploading now...");
       // formData.append("customName", file.name);
       // formData.append("documentType", "other");
@@ -459,9 +493,11 @@ export function DocumentUpload({user_id}:DocumentUploadProps) {
 
   return (
     <div className="step-container">
-      <S3FileTable userId={user_id.toString()} refreshTrigger={refreshTrigger} />
-      <div className="step-header">
-        
+      <S3FileTable
+        userId={user_id.toString()}
+        refreshTrigger={refreshTrigger}
+      />
+      <div className="mt-6 step-header">
         <div className="step-number">
           <span className="step-number-text">4</span>
         </div>

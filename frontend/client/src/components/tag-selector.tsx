@@ -67,17 +67,17 @@ export function TagSelector({ selectedTags, onTagSelection, maxTags }: TagSelect
     );
   }
 
-  if (availableTags.length === 0) {
-    return (
-      <Card className="bg-slate-700 border-slate-600">
-        <CardContent className="p-4 text-center">
-          <Tags className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-          <p className="text-sm text-slate-400">No data uploaded yet</p>
-          <p className="text-xs text-slate-500">Upload a CSV/Excel file first</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // if (availableTags.length === 0) {
+  //   return (
+  //     <Card className="bg-slate-700 border-slate-600">
+  //       <CardContent className="p-4 text-center">
+  //         <Tags className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+  //         <p className="text-sm text-slate-400">No data uploaded yet</p>
+  //         <p className="text-xs text-slate-500">Upload a CSV/Excel file first</p>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // }
 
   return (
     <div className="space-y-4">
@@ -88,7 +88,7 @@ export function TagSelector({ selectedTags, onTagSelection, maxTags }: TagSelect
           placeholder="Search tags..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full bg-card border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -106,7 +106,7 @@ export function TagSelector({ selectedTags, onTagSelection, maxTags }: TagSelect
       </div>
 
       {/* Available Tags List */}
-      <Card className="bg-slate-700 border-slate-600">
+      <Card className="bg-card border-slate-600">
         <CardContent className="p-0">
           <ScrollArea className="h-48">
             <div className="p-3 space-y-2">
@@ -159,7 +159,7 @@ export function TagSelector({ selectedTags, onTagSelection, maxTags }: TagSelect
           <p className="text-sm font-medium text-slate-300">Selected Tags:</p>
           <div className="space-y-2">
             {selectedTagsData.map((tag) => (
-              <div key={tag.tagId} className="flex items-center justify-between p-2 bg-slate-700 rounded-md">
+              <div key={tag.tagId} className="flex items-center justify-between p-2  rounded-md">
                 <div className="flex items-center space-x-2">
                   <div 
                     className="w-3 h-3 rounded-full"

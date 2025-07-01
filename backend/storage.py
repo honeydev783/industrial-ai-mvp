@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor, execute_values
 import json
 from dotenv import load_dotenv
-
+from vector_store import upsert_to_pinecone
 from models import (
     TimeSeriesData, 
     Annotation, 
@@ -18,6 +18,11 @@ from models import (
     RuleCreate,
     SavedGraphCreate
 )
+from embedding import embed_text
+from pinecone import Pinecone
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+phase2_index = pc.Index(name="timeseries")
+from collections import defaultdict
 
 load_dotenv()
 
@@ -30,8 +35,8 @@ class DatabaseStorage:
     def get_connection(self):
         """Get a database connection"""
         return psycopg2.connect(self.database_url)
-    
-    async def insert_time_series_data(self, data: List[Dict[str, Any]]) -> List[TimeSeriesData]:
+
+    async def insert_time_series_data(self, data: List[Dict[str, Any]], description: str) -> List[TimeSeriesData]:
         """Insert time-series data"""
         conn = self.get_connection()
         try:
@@ -73,7 +78,8 @@ class DatabaseStorage:
                            (len(values),))  # Get all recently inserted records
                 results = cur.fetchall()
                 conn.commit()
-                
+                grouped_data = defaultdict(list)
+
                 # Map database columns to API model fields
                 mapped_results = []
                 for row in results:
@@ -89,8 +95,65 @@ class DatabaseStorage:
                         'normalizedValue': row['normalized_value'],
                         'createdAt': row['created_at']
                     }
-                    mapped_results.append(TimeSeriesData(**mapped_row))
+                    ts_data = TimeSeriesData(**mapped_row)
+                    mapped_results.append(ts_data)
+                    grouped_data[ts_data.tagId].append(ts_data)
                 
+                for tagId, group in grouped_data.items():
+                    tagLabel = group[0].tagLabel
+                    unit = group[0].unit
+                    minRange = group[0].minRange
+                    maxRange = group[0].maxRange
+
+                    # Combine all timestamps and values into one text chunk
+                    chunk_lines = [
+                        f"{row.timestamp}: {tagLabel} {row.value} {unit} (normalized: {row.normalizedValue}%)"
+                        for row in group
+                    ]
+                    description = f"{tagLabel} readings in {unit}, range: {minRange}–{maxRange}"
+                    combined_text = f"{description}\n" + "\n".join(chunk_lines)
+
+                    print("CHUNK TEXT ===>", combined_text)
+
+                    # Step 3: Embed and upsert one vector per tag group
+                    embedding = await embed_text(combined_text)
+
+                    phase2_index.upsert([
+                        {
+                            "id": f"time_series_{tagId}",
+                            "values": embedding,
+                            "metadata": {
+                                "type": "time_series",
+                                "tagId": tagId,
+                                "tagLabel": tagLabel,
+                                "unit": unit,
+                                "minRange": minRange,
+                                "maxRange": maxRange,
+                                "numPoints": len(group)
+                            }
+                        }
+                    ])
+                    # mapped_results.append(TimeSeriesData(**mapped_row))
+                # for row in mapped_results:
+                #     text = f"{row.timestamp}: {row.tagLabel}  {row.value}  {row.unit}   (normalized: {row.normalizedValue}%) {description}"
+                #     print("data text===>", text)
+                #     embedding = await embed_text(text)
+
+                #     phase2_index.upsert([
+                #         {
+                #             "id": f"time_series_{row.id}",
+                #             "values": embedding,
+                #             "metadata": {
+                #                 "type": "time_series",
+                #                 "tagId": row.tagId,
+                #                 "tagLabel": row.tagLabel,
+                #                 "unit": row.unit,
+                #                 "timestamp": str(row.timestamp),
+                #                 "value": row.value,
+                #                 "normalizedValue": row.normalizedValue
+                #             }
+                #         }
+                #     ])
                 return mapped_results
         finally:
             conn.close()
@@ -220,6 +283,23 @@ class DatabaseStorage:
                         'createdAt': result['created_at'],
                     }
                     print(f"Annotation created: {mapped_result}")
+                    text = f"Annotation on {annotation_data['tagId']} at {annotation_data['timestamp']}: {annotation_data['description']} (Category: {annotation_data['category']}, Severity: {annotation_data['severity']})"
+                    embedding = await embed_text(text)
+
+                    phase2_index.upsert([
+                        {
+                            "id": f"annotation_{result['id']}",
+                            "values": embedding,
+                            "metadata": {
+                                "type": "annotation",
+                                "tagId": annotation_data['tagId'],
+                                "timestamp": str(annotation_data['timestamp']),
+                                "description": annotation_data['description'],
+                                "category": annotation_data['category'],
+                                "severity": annotation_data['severity']
+                            }
+                        }
+                    ])
                     return Annotation(**dict(mapped_result))
                 raise ValueError("Failed to create annotation")
         except Exception as e:
@@ -285,8 +365,8 @@ class DatabaseStorage:
                 rule_data["createdAt"] = createdAt
                 query = """
                     INSERT INTO rules 
-                    (tag_id, condition, threshold, threshold_max, severity, description, is_active, created_at)
-                    VALUES (%(tagId)s, %(condition)s, %(threshold)s, %(thresholdMax)s, %(severity)s, %(description)s, %(isActive)s, %(createdAt)s)
+                    (tag_id, condition, threshold, threshold_max, severity,  description, is_active, created_at)
+                    VALUES (%(tagId)s, %(condition)s, %(threshold)s, %(thresholdMax)s, %(severity)s,  %(description)s,  %(isActive)s, %(createdAt)s)
                     RETURNING *
                 """
                 print(f"Rule data: {rule_data}")
@@ -307,6 +387,23 @@ class DatabaseStorage:
                         'isActive': result['is_active'],
                         'createdAt': result['created_at']
                     }
+                    text = f"Rule for {rule_data['tagId']}: {rule_data['description']} (Condition: {rule_data['condition']}, Threshold: {rule_data['threshold']}, Severity: {rule_data['severity']})"
+                    embedding = await embed_text(text)
+
+                    phase2_index.upsert([
+                        {
+                            "id": f"rule_{result['id']}",
+                            "values": embedding,
+                            "metadata": {
+                                "type": "rule",
+                                "tagId": rule_data['tagId'],
+                                "description": rule_data['description'],
+                                "condition": rule_data['condition'],
+                                "threshold": rule_data['threshold'],
+                                "severity": rule_data['severity']
+                            }
+                        }
+                    ])
                     return Rule(**mapped_result)
                 raise ValueError("Failed to create rule")
         except Exception as e:

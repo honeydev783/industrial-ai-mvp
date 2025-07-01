@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-
+import api from "@/lib/api";
 interface S3FileTableProps {
   userId: string;
   refreshTrigger?: number;
 }
-export default function S3FileTable({ userId, refreshTrigger } : S3FileTableProps) {
+export default function S3FileTable({
+  userId,
+  refreshTrigger,
+}: S3FileTableProps) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`https://datonyx.site/files?user_id=${userId}`);
-      const data = await res.json();
+      const res = await api.get(`/files?user_id=${userId}`);
+      const data = await res.data;
       console.log("Fetched files:", data);
       setFiles(data || []);
     } catch (err) {
@@ -26,15 +29,14 @@ export default function S3FileTable({ userId, refreshTrigger } : S3FileTableProp
   const deleteFile = async (s3Url) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
-      const res = await fetch(
-        `https://datonyx.site/delete-file?s3_url=${encodeURIComponent(s3Url)}`,
-        { method: "DELETE" }
+      const res = await api.delete(
+        `/delete-file?s3_url=${encodeURIComponent(s3Url)}`,
+        // { method: "DELETE" }
       );
-      if (res.ok) {
+      if (res.status >= 200 && res.status < 300) {
         setFiles((prev) => prev.filter((url) => url !== s3Url));
       } else {
-        const error = await res.json();
-        alert("Delete failed: " + error.detail);
+        alert("Delete failed: " + (res.data?.detail || "Unknown error"));
       }
     } catch (err) {
       console.error("Error deleting file:", err);

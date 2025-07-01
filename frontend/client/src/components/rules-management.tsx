@@ -202,7 +202,7 @@ export function RulesManagement({ selectedTags }: RulesManagementProps) {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-slate-800 border-slate-700 mb-6">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Settings className="h-5 w-5" />
@@ -217,7 +217,7 @@ export function RulesManagement({ selectedTags }: RulesManagementProps) {
   }
 
   return (
-    <Card>
+    <Card className="border-slate-700 mb-6">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Settings className="h-5 w-5" />
@@ -380,7 +380,7 @@ export function RulesManagement({ selectedTags }: RulesManagementProps) {
               {existingRules.map((rule) => {
                 const tag = availableTags.find((t: TagInfo) => t.tagId === rule.tagId);
                 return (
-                  <div key={rule.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded">
+                  <div key={rule.id} className="flex items-center justify-between p-2 rounded">
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center space-x-2">
                         <Badge variant="outline">{tag?.tagLabel || rule.tagId}</Badge>

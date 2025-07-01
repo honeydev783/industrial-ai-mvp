@@ -135,14 +135,14 @@ export default function Phase2() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-inter">
+    <div className="space-y-8">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+      <header className="border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <ChartLine className="text-blue-500 text-2xl" />
-              <h1 className="text-xl font-semibold text-slate-100">
+              <h1 className="text-xl font-semibold">
                 TimeSeries Analytics
               </h1>
             </div>
@@ -166,14 +166,16 @@ export default function Phase2() {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="border flex h-[calc(100vh-4rem)]">
         {/* Sidebar */}
-        <aside className="w-80 bg-slate-800 border-r border-slate-700 overflow-y-auto">
+        <aside className="w-80  border-r border-slate-700 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* File Upload */}
             <div>
               <div className="flex items-center mb-4">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                <div
+                  className="w-2 h-2 bg-green-500 rounded-full mr-2"
+                ></div>
                 <h2 className="text-lg font-semibold">Data Upload</h2>
               </div>
               <FileUpload onFileUploaded={handleFileUploaded} />
@@ -204,7 +206,7 @@ export default function Phase2() {
                     Window Size
                   </label>
                   <Select value={timeWindow} onValueChange={setTimeWindow}>
-                    <SelectTrigger className="w-full bg-slate-700 border-slate-600">
+                    <SelectTrigger className="w-full text-sm  border-slate-600">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -277,19 +279,19 @@ export default function Phase2() {
                 <h2 className="text-lg font-semibold">Model Status</h2>
               </div>
               <div className="space-y-3">
-                <div className="text-sm text-slate-400 mb-3">
+                <div className="text-sm text-slate-600 mb-3 font-medium">
                   Confirm when your model training is complete
                 </div>
                 <div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full bg-slate-700 border-slate-600 hover:bg-slate-600"
+                    className="w-full border-slate-600 hover:bg-slate-600 "
                     onClick={handleModelTrainingConfirm}
                     disabled={isTrainingLoading || isModelTrained}
                   >
                     {isTrainingLoading ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 font-medium">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         Training...
                       </div>
@@ -309,7 +311,7 @@ export default function Phase2() {
         <main className="flex-1 overflow-auto">
           <div className="p-6">
             {/* Chart Container */}
-            <Card className="bg-slate-800 border-slate-700 mb-6">
+            <Card className="border-slate-700 mb-6">
               <CardHeader className="border-b border-slate-700">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl">

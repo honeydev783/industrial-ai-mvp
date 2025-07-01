@@ -49,7 +49,7 @@ const getTagColor = (tagId: string) => {
 export function AnnotationsTable({ annotations, onDeleteAnnotation }: AnnotationsTableProps) {
   if (annotations.length === 0) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="border-slate-700">
         <CardHeader className="border-b border-slate-700">
           <CardTitle className="flex items-center">
             <List className="w-5 h-5 mr-2 text-blue-500" />
@@ -70,7 +70,7 @@ export function AnnotationsTable({ annotations, onDeleteAnnotation }: Annotation
   }
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="border-slate-700">
       <CardHeader className="border-b border-slate-700">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">

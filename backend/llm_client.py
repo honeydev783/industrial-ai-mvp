@@ -3,15 +3,17 @@
 import boto3
 import json
 import os
-
+import openai
+from typing import List
+open_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 client = boto3.client("bedrock-runtime", region_name=os.getenv("BEDROCK_REGION"))
 
 
 def ask_claude(query, context_chunks, industry, sme_context, use_external):
     # Build system prompt
-    use_external_str = "true" if use_external else "false"
+    use_external_str = "true" if use_external == 2 else "false"
 
-    if not use_external:
+    if  use_external < 2:
         system_prompt = f"""Human:
         You are an expert specialist in industrial process engineering, with deep knowledge
         across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
@@ -33,7 +35,7 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
         }}
         
         Question: {query} Assistant:"""
-    else:
+    else: 
         system_prompt = f"""Human:
         You are an expert specialist in industrial process engineering, with deep knowledge
         across industries such as Feed Milling, Food & Beverage, Pharmaceuticals, Water
@@ -71,7 +73,7 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
 
     
     text_output = body["content"][0]["text"]
-    print("Answer response:", type(text_output))
+    print("Answer response:", text_output)
     data = json.loads(text_output)
     answer = data["answer"]
     internal_source = data["internal_source"]
@@ -83,3 +85,49 @@ def ask_claude(query, context_chunks, industry, sme_context, use_external):
     # For simplicity in this example, we just return the full text and dummy values
     # answer = json.load(text_output)
     return (answer, internal_source, external_source, document_grounding_percent, used_external_knowledge, following_up)
+
+async def ask_openai_structured(contexts: List[str], query: str):
+    print("Asking OpenAI for structured response...")
+    prompt = f"""
+    You are an expert analyzing industrial time-series data like Flow, pressure, temperature, conductivity, humidity, vibration, level.
+    Analyze deeply the context from RAG below to answer the user's question and give enough answer in warmful tone and following questions for the next conversation.
+    we need narrative description answer with accurate data.
+    Context:
+    {contexts}
+    Question: {query}
+    answer field will be warm and engaging narrative description 
+    Return your answer in this JSON format:
+    {{
+        "answer": [""],
+        "internal_source": always "",
+        "external_source": always "",
+        "document_grounding_percent": always "0",
+        "used_external_knowledge": always "false",
+        "following_up": ["...", "..."]
+    }}
+    """
+
+
+    response = open_client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You return JSON outputs only. No prose."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3,
+        max_tokens=600
+    )
+
+    raw = response.choices[0].message.content.strip()
+    print("OpenAI response:", raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "answer": [""],
+            "internal_source": "",
+            "external_source": "",
+            "document_grounding_percent": "0",
+            "used_external_knowledge": "false",
+            "following_up": []
+        }

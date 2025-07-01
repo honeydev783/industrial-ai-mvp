@@ -17,7 +17,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import axios from "axios";
 import { TailSpin } from "react-loader-spinner";
-
+import { set } from "date-fns";
+import api from "@/lib/api";
 const FullScreenLoader = () => (
   <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
     <TailSpin height="60" width="60" color="#ffffff" ariaLabel="loading" />
@@ -36,7 +37,7 @@ interface SMEContext {
 interface QuestionAnsweringProps {
   industry: string;
   user_id: number;
-  use_external: boolean;
+  use_external: number;
   sme_context: SMEContext;
 }
 interface QuestionWithAnswers {
@@ -44,6 +45,7 @@ interface QuestionWithAnswers {
   questionText: string;
   contextId: number | null;
   createdAt: Date;
+  use_external: number;
   answers: Array<{
     id: number;
     questionId: number;
@@ -63,6 +65,13 @@ interface QuestionWithAnswers {
   }>;
 }
 
+interface Feedback {
+  question: string;
+  answer: string;
+  feedback: string;
+  comment?: string;
+  used_chunk_ids: string[];
+}
 export function QuestionAnswering({
   industry,
   user_id,
@@ -81,6 +90,7 @@ export function QuestionAnswering({
   const queryClient = useQueryClient();
   const [isShowing, setIsShowing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [ragFeedback, setRagFeedback] = useState<Feedback>(null);
   const { data: questions = [], isLoading } = useQuery<QuestionWithAnswers[]>({
     queryKey: ["/api/questions"],
   });
@@ -142,6 +152,13 @@ export function QuestionAnswering({
   });
 
   const handleSubmitQuestion = async () => {
+    setRagFeedback({
+      question: currentQuestion,
+      answer: "",
+      feedback: "",
+      comment: "",
+      used_chunk_ids: [],
+    });
     if (!currentQuestion.trim()) {
       toast({
         title: "Warning",
@@ -191,20 +208,19 @@ export function QuestionAnswering({
         questionText: currentQuestion,
         contextId: null,
         createdAt: new Date(),
+        use_external: use_external,
         answers: [],
       };
       console.log("use external source", use_external);
-      const res = await axios.post(
-        "https://datonyx.site/query",
-        {
-          query: currentQuestion,
-          industry: industry,
-          user_id: user_id.toString(),
-          use_external: use_external,
-          sme_context: {
-            plant_name: sme_context.plantName,
-            key_processes: [sme_context.keyProcesses],
-            equipment: [sme_context.criticalEquipment],
+      const res = await api.post("/query", {
+        query: currentQuestion,
+        industry: industry,
+        user_id: user_id.toString(),
+        use_external: use_external,
+        sme_context: {
+          plant_name: sme_context.plantName,
+          key_processes: [sme_context.keyProcesses],
+          equipment: [sme_context.criticalEquipment],
             known_issues: [sme_context.knownChallenges],
             regulations: [sme_context.regulations],
             unit_process: sme_context.unitProcess,
@@ -218,7 +234,11 @@ export function QuestionAnswering({
         }
       );
       console.log("Response from backend:", res.data);
-
+      setRagFeedback((prev) => ({
+        ...prev,
+        answer: res.data.answer[0],
+        used_chunk_ids: res.data.used_chunk_ids || [],
+      }));
       const answer = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         questionId: id,
@@ -264,6 +284,13 @@ export function QuestionAnswering({
 
   const handleFollowUpClick = async (question: string) => {
     setCurrentQuestion(question);
+    setRagFeedback({
+      question: question,
+      answer: "",
+      feedback: "",
+      comment: "",
+      used_chunk_ids: [],
+    });
     setIsUploading(true);
     try {
       const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -271,21 +298,20 @@ export function QuestionAnswering({
         id,
         questionText: currentQuestion,
         contextId: null,
+        use_external: use_external,
         createdAt: new Date(),
         answers: [],
       };
       console.log("use external source", use_external);
-      const res = await axios.post(
-        "https://datonyx.site/query",
-        {
-          query: question,
-          industry: industry,
-          user_id: user_id.toString(),
-          use_external: use_external,
-          sme_context: {
-            plant_name: sme_context.plantName,
-            key_processes: [sme_context.keyProcesses],
-            equipment: [sme_context.criticalEquipment],
+      const res = await api.post("/query", {
+        query: question,
+        industry: industry,
+        user_id: user_id.toString(),
+        use_external: use_external,
+        sme_context: {
+          plant_name: sme_context.plantName,
+          key_processes: [sme_context.keyProcesses],
+          equipment: [sme_context.criticalEquipment],
             known_issues: [sme_context.knownChallenges],
             regulations: [sme_context.regulations],
             unit_process: sme_context.unitProcess,
@@ -299,7 +325,11 @@ export function QuestionAnswering({
         }
       );
       console.log("Response from backend:", res.data);
-
+      setRagFeedback((prev) => ({
+        ...prev,
+        answer: res.data.answer[0],
+        used_chunk_ids: res.data.used_chunk_ids || [],
+      }));
       const answer = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         questionId: id,
@@ -342,25 +372,55 @@ export function QuestionAnswering({
     }
   };
 
-  const handleFeedback = (
+  const handleFeedback = async (
     answerId: number,
-    rating: "positive" | "negative"
+    rating: "correct" | "incorrect"
   ) => {
     const comment = feedbackComments[answerId];
-    console.log("Submitting feedback:", comment, rating);
-    feedbackMutation.mutate({
-      answerId,
-      rating,
-      comment: comment || undefined,
-    });
+    setRagFeedback((prev) => ({
+      ...prev,
+      feedback: rating,
+      comment: comment || "",
+    }));
+    console.log("RAG Feedback:", ragFeedback);
+    try {
+      const response = await api.post("/rag/feedback", {
+        question: ragFeedback.question,
+        answer: ragFeedback.answer,
+        feedback: rating,
+        comment: comment || undefined,
+        used_chunk_ids: ragFeedback.used_chunk_ids,
+      });
+      console.log("Feedback response:", response.data);
+      toast({
+        title: "Success",
+        description: response.data.message || "Feedback received and processed",
+      });
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Clear comment and collapse
-    setFeedbackComments((prev) => ({ ...prev, [answerId]: "" }));
-    setExpandedComments((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(answerId);
-      return newSet;
-    });
+    
+    // const comment = feedbackComments[answerId];
+    console.log("Submitting feedback:", comment, rating);
+    // feedbackMutation.mutate({
+    //   answerId,
+    //   rating,
+    //   comment: comment || undefined,
+    // });
+    // // Clear comment and collapse
+    // setFeedbackComments((prev) => ({ ...prev, [answerId]: "" }));
+    // setExpandedComments((prev) => {
+    //   const newSet = new Set(prev);
+    //   newSet.delete(answerId);
+    //   return newSet;
+    // });
   };
 
   const toggleCommentBox = (answerId: number) => {
@@ -453,13 +513,10 @@ export function QuestionAnswering({
                     {question.answers.map((answer) => (
                       <div key={answer.id} className="ml-11 mb-4">
                         <Card className="p-4">
-                          <p className="mb-4">
-                            {answer.answerText[0]}
-                          </p>
-                          <p className="mb-4">
-                            {answer.answerText[1]}
-                          </p>
+                          <p className="mb-4">{answer.answerText[0]}</p>
+                          <p className="mb-4">{answer.answerText[1]}</p>
                           {/* Sources */}
+                          {question.use_external < 3 ? 
                           <div className="border-t border-border pt-3 mt-3">
                             <p className="text-xs font-medium mb-2">Sources:</p>
                             <div className="space-y-1">
@@ -481,9 +538,11 @@ export function QuestionAnswering({
                                 </p>
                               ))}
                             </div>
-                          </div>
+                          </div> : <></>}
+                          
 
                           {/* Transparency Tag */}
+                          { question.use_external < 3 ?
                           <div className="mt-3 pt-3 border-t border-border">
                             <Badge
                               variant="secondary"
@@ -493,7 +552,8 @@ export function QuestionAnswering({
                               % document | External:{" "}
                               {answer.transparency.externalPercentage}%
                             </Badge>
-                          </div>
+                          </div> : <></> }
+                          
                         </Card>
 
                         {/* Follow-up Suggestions */}
@@ -533,7 +593,7 @@ export function QuestionAnswering({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() =>
-                                    handleFeedback(answer.id, "positive")
+                                    handleFeedback(answer.id, "correct")
                                   }
                                   disabled={feedbackMutation.isPending}
                                   className="h-8 w-8 text-muted-foreground hover:text-green-500"
@@ -544,7 +604,7 @@ export function QuestionAnswering({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() =>
-                                    handleFeedback(answer.id, "negative")
+                                    handleFeedback(answer.id, "incorrect")
                                   }
                                   disabled={feedbackMutation.isPending}
                                   className="h-8 w-8 text-muted-foreground hover:text-red-500"
@@ -595,7 +655,7 @@ export function QuestionAnswering({
                                 <Button
                                   size="sm"
                                   onClick={() =>
-                                    handleFeedback(answer.id, "positive")
+                                    handleFeedback(answer.id, "correct")
                                   }
                                   disabled={feedbackMutation.isPending}
                                 >

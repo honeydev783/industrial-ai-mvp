@@ -12,18 +12,22 @@ class SMEContext(BaseModel):
     regulations: Optional[List[str]]
     notes: Optional[str]
 
+    
 class QueryRequest(BaseModel):
     user_id: str
     query: str
-    industry: str
-    sme_context: SMEContext
-    use_external: bool
+    industry: Optional[str]
+    sme_context: Optional[SMEContext]
+    use_external: Optional[int]
+    
 
 class QueryResponse(BaseModel):
     answer: List[str]
     sources: List[str]
     transparency: List[str]
     follow_up_questions: List[str]
+    used_chunk_ids: Optional[List[str]]
+    use_external: int
 
 class AnnotationType(str, Enum):
     point = "point"
@@ -159,3 +163,13 @@ class ChartDataPoint(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
+    
+class QueryModel(BaseModel):
+    question: str
+
+class FeedbackModel(BaseModel):
+    question: str
+    answer: str
+    feedback: str  # "correct", "incorrect", or "comment"
+    comment: Optional[str] = None
+    used_chunk_ids: List[str]

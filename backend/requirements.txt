@@ -16,3 +16,4 @@ pandas
 psycopg2-binary
 openpyxl
 sqlalchemy
+openai
