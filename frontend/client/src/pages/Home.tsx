@@ -161,12 +161,12 @@ export default function Home() {
         onUnitProcess={setUnitProcess}
       />
       <DocumentUpload user_id={user_id} />
-      <div className="step-container">
+      {/* <div className="step-container">
         <h2 className="text-xl font-semibold mb-4">Time Series Data</h2>
         <div className="flex h-[calc(100vh-4rem)]">
           <aside className="w-80 border rounded-lg overflow-y-auto">
             <div className="p-6 space-y-6">
-              {/* File Upload */}
+              
               <div>
                 <div className="flex items-center mb-4">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
@@ -198,7 +198,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tag Selection */}
+              
               <div>
                 <div className="flex items-center mb-4">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
@@ -211,7 +211,7 @@ export default function Home() {
                 />
               </div>
 
-              {/* Time Controls */}
+             
               <div>
                 <div className="flex items-center mb-4">
                   <Clock className="w-4 h-4 text-purple-500 mr-2" />
@@ -235,23 +235,14 @@ export default function Home() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" className="flex-1 bg-slate-700 border-slate-600 hover:bg-slate-600">
-                          <ChevronLeft className="w-4 h-4 mr-1" />
-                          Previous
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1 bg-slate-700 border-slate-600 hover:bg-slate-600">
-                          Next
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
-                      </div> */}
+                  
                 </div>
               </div>
             </div>
           </aside>
           <main className="flex-1 overflow-auto">
             <div className="p-6 pt-0">
-              {/* Chart Container */}
+              
               <Card className="bg-card border mb-6">
                 <CardHeader className="border-b border-slate-700">
                   <div className="flex items-center justify-between">
@@ -297,15 +288,7 @@ export default function Home() {
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </div>
-                      {/* <div className="border-l border-slate-600 pl-3">
-                      <Button
-                        onClick={() => setShowSaveModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Graph
-                      </Button>
-                    </div> */}
+                      
                     </div>
                   </div>
                 </CardHeader>
@@ -324,7 +307,7 @@ export default function Home() {
             </div>
           </main>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

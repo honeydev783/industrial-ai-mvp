@@ -115,7 +115,6 @@ async def ask_openai_structured(contexts: List[str], query: str):
             {"role": "user", "content": prompt}
         ],
         temperature=0.3,
-        max_tokens=600
     )
 
     raw = response.choices[0].message.content.strip()

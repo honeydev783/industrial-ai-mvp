@@ -12,16 +12,16 @@ from urllib.parse import urlparse
 import time
 
 
-s3_client = boto3.client('s3')
-# s3 = boto3.client('s3', region_name=os.getenv("AWS_REGION"))
-textract = boto3.client('textract', region_name=os.getenv("AWS_REGION"))
-# S3_BUCKET = os.getenv("S3_BUCKET")
+s3_client = boto3.client("s3")
+textract = boto3.client("textract", region_name=os.getenv("AWS_REGION"))
+
 
 def upload_to_s3(file_path: str, filename: str, user_id: str) -> str:
     bucket = os.getenv("S3_BUCKET")
     s3_key = f"{user_id}/{uuid.uuid4()}_{filename}"
     s3_client.upload_file(file_path, bucket, s3_key)
     return f"s3://{bucket}/{s3_key}"
+
 
 def extract_text_chunks(file_path, s3_url):
     ext = os.path.splitext(file_path)[1].lower()
@@ -34,20 +34,20 @@ def extract_text_chunks(file_path, s3_url):
             # Parse S3 URL
             parsed = urlparse(s3_url)
             bucket = parsed.netloc
-            key = parsed.path.lstrip('/')
+            key = parsed.path.lstrip("/")
             print("Key:", key, "Bucket:", bucket)
             # Start async job
             response = textract.start_document_text_detection(
-                DocumentLocation={'S3Object': {'Bucket': bucket, 'Name': key}}
+                DocumentLocation={"S3Object": {"Bucket": bucket, "Name": key}}
             )
-            job_id = response['JobId']
+            job_id = response["JobId"]
             # Wait for completion
             while True:
                 result = textract.get_document_text_detection(JobId=job_id)
-                status = result['JobStatus']
-                if status == 'SUCCEEDED':
+                status = result["JobStatus"]
+                if status == "SUCCEEDED":
                     break
-                elif status in ('FAILED', 'PARTIAL_SUCCESS'):
+                elif status in ("FAILED", "PARTIAL_SUCCESS"):
                     return {"error": f"Textract job failed: {status}"}
                 time.sleep(2)
             # Extract text
@@ -63,13 +63,13 @@ def extract_text_chunks(file_path, s3_url):
     elif ext == ".doc":
         text = textract.process(file_path).decode("utf-8")
         print("DOC file read successfully", text)
-        
+
     elif ext == ".txt":
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             text = f.read()
         print("text file read successfully", text)
     elif ext == ".csv":
-        with open(file_path, newline='', encoding='utf-8') as csvfile:
+        with open(file_path, newline="", encoding="utf-8") as csvfile:
             reader = csv.reader(csvfile)
             text = "\n".join([", ".join(row) for row in reader])
         print("CSV file read successfully", text)
@@ -77,9 +77,10 @@ def extract_text_chunks(file_path, s3_url):
         raise ValueError("Unsupported file type")
     # Simple chunking (every 512 words)
     words = text.split()
-    for i in range(0, len(words), 512):
-        text_chunks.append(" ".join(words[i:i+512]))
+    for i in range(0, len(words), 1024):
+        text_chunks.append(" ".join(words[i : i + 1024]))
     return text_chunks
+
 
 # def extract_text_chunks(file) -> list:
 #     # Dummy example: replace with real PDF, DOCX, CSV parser
@@ -89,4 +90,3 @@ def extract_text_chunks(file_path, s3_url):
 #         ("Chunk 2 text of the document", "Section 1"),
 #         ("Chunk 3 text of the document", "Section 2"),
 #     ]
-
