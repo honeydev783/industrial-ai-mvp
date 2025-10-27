@@ -46,7 +46,7 @@ import type { TagInfo, AnnotationMarker } from "@shared/schema";
 //   notes: string;
 // }
 export default function Home() {
-  const [industry, setIndustry] = useState("feed-milling");
+  const [industry, setIndustry] = useState("water-treatment");
   const [plantName, setPlantName] = useState("");
   const [keyProcesses, setKeyProcesses] = useState("");
   const [criticalEquipment, setCriticalEquipment] = useState("");
@@ -100,7 +100,7 @@ export default function Home() {
   // Populate form with existing context
   useEffect(() => {
     if (existingContext) {
-      setIndustry(existingContext.industry);
+      //setIndustry(existingContext.industry);
       setPlantName(existingContext.plantName);
       setKeyProcesses(existingContext.keyProcesses);
       setCriticalEquipment(existingContext.criticalEquipment);
@@ -140,9 +140,21 @@ export default function Home() {
 
     return () => clearTimeout(timer);
   }, [industry, plantName, keyProcesses, criticalEquipment]);
+
+  const changeIndustry = (newIndustry: string) => {
+    setIndustry(newIndustry);
+    localStorage.setItem("selectedIndustry", JSON.stringify(newIndustry));
+  };
+  useEffect(() => {
+    if (localStorage.getItem("selectedIndustry")) {
+      setIndustry(JSON.parse(localStorage.getItem("selectedIndustry") || "water-treatment"))
+    } else {
+      setIndustry("water-treatment");
+    }
+  }, []);
   return (
     <div className="space-y-8">
-      <IndustrySelection value={industry} onChange={setIndustry} />
+      <IndustrySelection value={industry} onChange={changeIndustry} />
 
       <SMEContextForm
         plantName={plantName}

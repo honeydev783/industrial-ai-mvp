@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 interface IndustrySelectionProps {
   value: string;
   onChange: (value: string) => void;
@@ -14,7 +13,7 @@ export function IndustrySelection({ value, onChange }: IndustrySelectionProps) {
     { value: "water-treatment", label: "Water Treatment" },
     { value: "general-manufacturing", label: "General Manufacturing"}
   ];
-
+  
   return (
     <div className="step-container">
       <div className="step-header">
