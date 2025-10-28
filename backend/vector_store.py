@@ -43,16 +43,25 @@ async def query_pinecone(request, user_id=None) -> List[dict]:
         include_metadata=True,
         # filter=filter_
     )
-
+    print("haharesults:", results)
     chunks = []
     for match in results["matches"]:
+        meta = match.get("metadata", {})
         chunks.append(
             {
-                "text": match["metadata"]["text"],
-                "source": match["metadata"]["source"],
-                "score": match["score"],
+                "text": meta.get("text", ""),
+                "source": meta.get("source", "unknown"),  # safe default
+                "score": match.get("score", 0),
             }
         )
+    # for match in results["matches"]:
+    #     chunks.append(
+    #         {
+    #             "text": match["metadata"]["text"],
+    #             "source": match["metadata"]["source"],
+    #             "score": match["score"],
+    #         }
+    #     )
     print("query_pinecone results:", chunks)
     return chunks
 
